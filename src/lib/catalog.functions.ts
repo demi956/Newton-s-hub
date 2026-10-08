@@ -10,6 +10,13 @@ export const PRODUCT_SELECT = `
   images:product_images ( id, image_url, is_primary, sort_order )
 `;
 
+// Listing pages don't show descriptions or spec sheets, so leave them out of the payload.
+const LIST_SELECT = `
+  id, sku, name, slug, brand, model, subcategory, featured,
+  variants:product_variants ( id, sku, storage, color, condition, price, sale_price, stock_quantity, stock_tracking_mode, availability_status, active ),
+  images:product_images ( id, image_url, is_primary, sort_order )
+`;
+
 export const listProducts = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) =>
     z
@@ -24,7 +31,7 @@ export const listProducts = createServerFn({ method: "GET" })
     const supabase = publicClient();
     let query = supabase
       .from("products")
-      .select(PRODUCT_SELECT)
+      .select(LIST_SELECT)
       .eq("active", true)
       .order("name", { ascending: true });
 

@@ -1,8 +1,29 @@
-# Truthful Data Hub
+# Newton's Hub
 
-Read 00_READ_ME_FIRST.md first, then follow 01_LOVABLE_MASTER_PROMPT.md exactly. Treat data/MASTER_SOURCE_OF_TRUTH.json as canonical. Use the supplied Supabase migrations as the database blueprint. Build the functional foundation first, preserve real Newton's Hub data, and do not invent missing Newton-specific information.
+**We Buy • We Sell • We Swap — Where quality meets affordability.**
 
-This project was built with [Lovable](https://lovable.dev).
+Online store for Newton's Hub (UMaT Campus, Tarkwa & Breman Essiam, Ghana): phones and accessories,
+sell/swap requests, MTN / AirtelTigo / Telecel data bundles and MTN AFA registration, with an
+AI shopping assistant ("Newton's AI") and an admin dashboard.
+
+**Stack:** TanStack Start (React 19, Vite 8, server functions on Nitro) · Tailwind CSS 4 ·
+Supabase (Postgres, Auth, RLS) · Anthropic Claude for the assistant · deployed on Vercel.
+
+| Guide | What it covers |
+|---|---|
+| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Vercel setup, environment variables, migration, auth URLs |
+| [`ADMIN_SECURITY.md`](ADMIN_SECURITY.md) | Making the owner an admin; security model and verification |
+| [`PRODUCT_IMAGES.md`](PRODUCT_IMAGES.md) | Which product photos exist, which are still needed, how to add them |
+| [`.env.example`](.env.example) | Every environment variable |
+
+### Where things live
+
+- `src/routes/` — pages (`index`, `shop`, `shop.$slug`, `cart`, `checkout`, `bundles`, `buy-sell-swap`, `contact`, `auth`, `_authenticated/account`, `admin`)
+- `src/lib/*.functions.ts` — server functions (catalog, orders, requests, wishlist, admin, assistant)
+- `src/lib/assistant.server.ts` — Newton's AI: catalog grounding, guardrails, rate limit, fallback
+- `src/components/assistant/` — welcome animation and floating chat
+- `supabase/migrations/` — database history (apply new files only; never replay the initial schema on live data)
+- `public/products/` — Newton's Hub's own product photos (WebP, 480/900px)
 
 ## Build with Lovable
 

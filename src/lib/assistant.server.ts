@@ -494,7 +494,11 @@ export async function answer(history: ChatTurn[]): Promise<AssistantReply> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20_000);
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const base = (process.env["ANTHROPIC_BASE_URL"] || "https://api.anthropic.com").replace(
+      /\/+$/,
+      "",
+    );
+    const res = await fetch(`${base}/v1/messages`, {
       method: "POST",
       signal: controller.signal,
       headers: {

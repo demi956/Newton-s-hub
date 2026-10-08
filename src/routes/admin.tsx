@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { requireRouteAuth } from "@/lib/auth-guard";
 import { getAdminAccess, getAdminDashboard } from "@/lib/admin.functions";
@@ -15,7 +14,10 @@ const tabs = ADMIN_TABS.map((t) => t.key) as [AdminTab, ...AdminTab[]];
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
-  validateSearch: (s) => z.object({ tab: z.enum(tabs).optional().catch(undefined) }).parse(s),
+  validateSearch: (s: Record<string, unknown>): { tab?: AdminTab } =>
+    typeof s["tab"] === "string" && (tabs as string[]).includes(s["tab"])
+      ? { tab: s["tab"] as AdminTab }
+      : {},
   beforeLoad: async ({ location }) => {
     await requireRouteAuth({ location });
     // Server-verified role check; every admin data call re-checks independently.

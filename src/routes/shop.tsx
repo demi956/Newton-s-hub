@@ -1,7 +1,6 @@
 import { createFileRoute, Link, Outlet, useMatch, useNavigate } from "@tanstack/react-router";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { z } from "zod";
 import { ProductCard } from "@/components/ProductCard";
 import { listProducts } from "@/lib/catalog.functions";
 import {
@@ -21,15 +20,29 @@ const SORTS = {
 } as const;
 type Sort = keyof typeof SORTS;
 
-const searchSchema = z.object({
-  q: z.string().max(80).optional().catch(undefined),
-  category: z.string().max(80).optional().catch(undefined),
-  sort: z.enum(["featured", "price-asc", "price-desc", "name"]).optional().catch(undefined),
-  instock: z.boolean().optional().catch(undefined),
-});
+type ShopSearch = {
+  q?: string | undefined;
+  category?: string | undefined;
+  sort?: Sort | undefined;
+  instock?: boolean | undefined;
+};
+
+// Hand-rolled (not zod) so the shop's URL parsing stays out of the initial JS bundle.
+function parseShopSearch(search: Record<string, unknown>): ShopSearch {
+  const str = (v: unknown) => (typeof v === "string" && v.length <= 80 && v.trim() ? v : undefined);
+  const out: ShopSearch = {};
+  const q = str(search["q"]);
+  const category = str(search["category"]);
+  const sort = search["sort"];
+  if (q) out.q = q;
+  if (category) out.category = category;
+  if (typeof sort === "string" && sort in SORTS) out.sort = sort as Sort;
+  if (search["instock"] === true || search["instock"] === "true") out.instock = true;
+  return out;
+}
 
 export const Route = createFileRoute("/shop")({
-  validateSearch: (search) => searchSchema.parse(search),
+  validateSearch: parseShopSearch,
   head: () => ({
     meta: [
       { title: "Shop phones & accessories — Newton's Hub" },
@@ -120,13 +133,14 @@ function Shop() {
           Number(productAvailability(b).purchasable) - Number(productAvailability(a).purchasable) ||
           Number(primaryImage(a).isPlaceholder) - Number(primaryImage(b).isPlaceholder) ||
           Number(b.featured) - Number(a.featured) ||
-          CATEGORY_ORDER.indexOf((a.subcategory ?? "") as never) - CATEGORY_ORDER.indexOf((b.subcategory ?? "") as never),
+          CATEGORY_ORDER.indexOf((a.subcategory ?? "") as never) -
+            CATEGORY_ORDER.indexOf((b.subcategory ?? "") as never),
       );
     return sorted;
   }, [products, category, search.q, search.instock, sort]);
 
   const filtersActive = !!(category || search.q || search.instock);
-  const setSearch = (patch: Partial<z.infer<typeof searchSchema>>) =>
+  const setSearch = (patch: Partial<ShopSearch>) =>
     void navigate({ search: (prev) => ({ ...prev, ...patch }), resetScroll: false });
 
   return (
