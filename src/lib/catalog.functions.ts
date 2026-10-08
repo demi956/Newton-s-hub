@@ -33,7 +33,8 @@ export const listProducts = createServerFn({ method: "GET" })
     if (data.search) {
       // PostgREST pattern characters are stripped so search text cannot change the filter.
       const term = data.search.replace(/[%_,().*\\]/g, " ").trim();
-      if (term) query = query.or(`name.ilike.%${term}%,brand.ilike.%${term}%,model.ilike.%${term}%`);
+      if (term)
+        query = query.or(`name.ilike.%${term}%,brand.ilike.%${term}%,model.ilike.%${term}%`);
     }
 
     const { data: rows, error } = await query;

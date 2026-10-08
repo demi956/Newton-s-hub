@@ -20,7 +20,8 @@ const orderInput = z.object({
 });
 
 const ORDER_ERRORS: Record<string, string> = {
-  insufficient_stock: "Some items don't have enough stock left. Please reduce the quantity or contact the shop.",
+  insufficient_stock:
+    "Some items don't have enough stock left. Please reduce the quantity or contact the shop.",
   item_unavailable: "Some items are no longer available. Please review your cart.",
   invalid_items: "Your cart couldn't be read. Please review it and try again.",
   invalid_details: "Please enter your full name and a valid phone number.",
@@ -33,13 +34,18 @@ export const createOrder = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { items, client_request_id, ...details } = data;
     // Preferred path: one database transaction that locks stock and prices server-side.
-    const { data: rows, error } = await context.supabase.rpc("place_order" as never, {
-      _items: items.map((i) => ({ variant_id: i.variantId, quantity: i.quantity })),
-      _details: details,
-      _client_request_id: client_request_id ?? null,
-    } as never);
+    const { data: rows, error } = await context.supabase.rpc(
+      "place_order" as never,
+      {
+        _items: items.map((i) => ({ variant_id: i.variantId, quantity: i.quantity })),
+        _details: details,
+        _client_request_id: client_request_id ?? null,
+      } as never,
+    );
     if (!error) {
-      const row = (rows as unknown as Array<{ id: string; order_number: string; subtotal: number }>)[0];
+      const row = (
+        rows as unknown as Array<{ id: string; order_number: string; subtotal: number }>
+      )[0];
       if (!row) throw new Error("Unable to complete the order request. Please try again.");
       return { id: row.id, order_number: row.order_number, subtotal: Number(row.subtotal) };
     }
@@ -48,110 +54,110 @@ export const createOrder = createServerFn({ method: "POST" })
     if (known) throw new Error(ORDER_ERRORS[known]);
     // PGRST202 / 42883: migration 20261008090000 not applied yet, so use the original path.
     if (code !== "PGRST202" && code !== "42883") {
-      throw new Error("Unable to complete the order request. Please try again or contact the shop.");
+      throw new Error(
+        "Unable to complete the order request. Please try again or contact the shop.",
+      );
     }
     return legacyCreateOrder(data, context.userId);
   });
 
 async function legacyCreateOrder(data: z.infer<typeof orderInput>, userId: string) {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const ids = data.items.map((i) => i.variantId);
-    const { data: variants, error: vErr } = await supabaseAdmin
-      .from("product_variants")
-      .select(
-        "id, sku, storage, color, condition, price, sale_price, active, availability_status, stock_quantity, stock_tracking_mode, product:products ( id, name, active )",
-      )
-      .in("id", ids)
-      .eq("active", true);
-    if (vErr)
-      throw new Error(
-        "Unable to complete the order request. Please try again or contact the shop.",
-      );
-    if (!variants || variants.length !== ids.length) {
-      throw new Error("Some items are no longer available. Please review your cart.");
-    }
+  const ids = data.items.map((i) => i.variantId);
+  const { data: variants, error: vErr } = await supabaseAdmin
+    .from("product_variants")
+    .select(
+      "id, sku, storage, color, condition, price, sale_price, active, availability_status, stock_quantity, stock_tracking_mode, product:products ( id, name, active )",
+    )
+    .in("id", ids)
+    .eq("active", true);
+  if (vErr)
+    throw new Error("Unable to complete the order request. Please try again or contact the shop.");
+  if (!variants || variants.length !== ids.length) {
+    throw new Error("Some items are no longer available. Please review your cart.");
+  }
 
+  if (
+    variants.some(
+      (v) => !v.product?.active || ["inactive", "out_of_stock"].includes(v.availability_status),
+    )
+  ) {
+    throw new Error("Some items are no longer available. Please review your cart.");
+  }
+  for (const item of data.items) {
+    const v = variants.find((row) => row.id === item.variantId)!;
     if (
-      variants.some(
-        (v) => !v.product?.active || ["inactive", "out_of_stock"].includes(v.availability_status),
-      )
-    ) {
-      throw new Error("Some items are no longer available. Please review your cart.");
-    }
-    for (const item of data.items) {
-      const v = variants.find((row) => row.id === item.variantId)!;
-      if (v.stock_tracking_mode === "exact" && v.stock_quantity !== null && v.stock_quantity < item.quantity)
-        throw new Error(ORDER_ERRORS["insufficient_stock"]);
-    }
-    // Server-side authoritative pricing.
-    let subtotal = 0;
-    const itemRows = data.items.map((item) => {
-      const v = variants.find((row) => row.id === item.variantId)!;
-      const unit = Number(v.sale_price ?? v.price);
-      const line = unit * item.quantity;
-      subtotal += line;
-      const product = v.product as unknown as { id: string; name: string } | null;
-      return {
-        product_id: product?.id ?? null,
-        variant_id: v.id,
-        product_name_snapshot: product?.name ?? "Item",
-        variant_snapshot: {
-          storage: v.storage,
-          color: v.color,
-          condition: v.condition,
-        },
-        sku_snapshot: v.sku,
-        unit_price_snapshot: unit,
-        quantity: item.quantity,
-        subtotal: line,
-      };
-    });
+      v.stock_tracking_mode === "exact" &&
+      v.stock_quantity !== null &&
+      v.stock_quantity < item.quantity
+    )
+      throw new Error(ORDER_ERRORS["insufficient_stock"]);
+  }
+  // Server-side authoritative pricing.
+  let subtotal = 0;
+  const itemRows = data.items.map((item) => {
+    const v = variants.find((row) => row.id === item.variantId)!;
+    const unit = Number(v.sale_price ?? v.price);
+    const line = unit * item.quantity;
+    subtotal += line;
+    const product = v.product as unknown as { id: string; name: string } | null;
+    return {
+      product_id: product?.id ?? null,
+      variant_id: v.id,
+      product_name_snapshot: product?.name ?? "Item",
+      variant_snapshot: {
+        storage: v.storage,
+        color: v.color,
+        condition: v.condition,
+      },
+      sku_snapshot: v.sku,
+      unit_price_snapshot: unit,
+      quantity: item.quantity,
+      subtotal: line,
+    };
+  });
 
-    const { data: order, error: oErr } = await supabaseAdmin
-      .from("orders")
-      .insert({
-        customer_id: userId,
-        subtotal,
-        delivery_fee: null,
-        total: data.fulfillment_method === "pickup" ? subtotal : null,
-        delivery_fee_confirmed: data.fulfillment_method === "pickup",
-        fulfillment_method: data.fulfillment_method,
-        full_name: data.full_name,
-        phone: data.phone,
-        email: data.email || null,
-        region: data.region || null,
-        city: data.city || null,
-        delivery_address: data.delivery_address || null,
-        landmark: data.landmark || null,
-        notes: data.notes || null,
-        payment_status: "pending",
-        order_status: "pending",
-      })
-      .select("id, order_number, subtotal")
-      .single();
-    if (oErr)
-      throw new Error(
-        "Unable to complete the order request. Please try again or contact the shop.",
-      );
+  const { data: order, error: oErr } = await supabaseAdmin
+    .from("orders")
+    .insert({
+      customer_id: userId,
+      subtotal,
+      delivery_fee: null,
+      total: data.fulfillment_method === "pickup" ? subtotal : null,
+      delivery_fee_confirmed: data.fulfillment_method === "pickup",
+      fulfillment_method: data.fulfillment_method,
+      full_name: data.full_name,
+      phone: data.phone,
+      email: data.email || null,
+      region: data.region || null,
+      city: data.city || null,
+      delivery_address: data.delivery_address || null,
+      landmark: data.landmark || null,
+      notes: data.notes || null,
+      payment_status: "pending",
+      order_status: "pending",
+    })
+    .select("id, order_number, subtotal")
+    .single();
+  if (oErr)
+    throw new Error("Unable to complete the order request. Please try again or contact the shop.");
 
-    const { error: iErr } = await supabaseAdmin
-      .from("order_items")
-      .insert(itemRows.map((row) => ({ ...row, order_id: order.id })));
-    if (iErr)
-      throw new Error(
-        "Unable to complete the order request. Please try again or contact the shop.",
-      );
+  const { error: iErr } = await supabaseAdmin
+    .from("order_items")
+    .insert(itemRows.map((row) => ({ ...row, order_id: order.id })));
+  if (iErr)
+    throw new Error("Unable to complete the order request. Please try again or contact the shop.");
 
-    const { error: historyError } = await supabaseAdmin.from("order_status_history").insert({
-      order_id: order.id,
-      status: "pending",
-      note: "Order placed on the website.",
-    });
+  const { error: historyError } = await supabaseAdmin.from("order_status_history").insert({
+    order_id: order.id,
+    status: "pending",
+    note: "Order placed on the website.",
+  });
 
-    if (historyError)
-      throw new Error("Order created, but history could not be updated. Please contact the shop.");
-    return { id: order.id, order_number: order.order_number, subtotal: Number(order.subtotal) };
+  if (historyError)
+    throw new Error("Order created, but history could not be updated. Please contact the shop.");
+  return { id: order.id, order_number: order.order_number, subtotal: Number(order.subtotal) };
 }
 
 export const submitMomoReference = createServerFn({ method: "POST" })
@@ -323,7 +329,9 @@ export const listMyBundleOrders = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("bundle_orders")
-      .select("id, order_number, receiving_phone, amount, status, payment_status, created_at, bundle:data_bundles ( network, name )")
+      .select(
+        "id, order_number, receiving_phone, amount, status, payment_status, created_at, bundle:data_bundles ( network, name )",
+      )
       .eq("customer_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(50);

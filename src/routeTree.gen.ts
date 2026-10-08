@@ -20,6 +20,7 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
+import { Route as AuthResetRouteImport } from './routes/auth_.reset'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -76,6 +77,11 @@ const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthResetRoute = AuthResetRouteImport.update({
+  id: '/auth_/reset',
+  path: '/auth/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShopSlugRoute = ShopSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/shop': typeof ShopRouteWithChildren
   '/account': typeof AuthenticatedAccountRoute
+  '/auth/reset': typeof AuthResetRoute
   '/shop/$slug': typeof ShopSlugRoute
 }
 export interface FileRoutesByTo {
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/shop': typeof ShopRouteWithChildren
   '/account': typeof AuthenticatedAccountRoute
+  '/auth/reset': typeof AuthResetRoute
   '/shop/$slug': typeof ShopSlugRoute
 }
 export interface FileRoutesById {
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/shop': typeof ShopRouteWithChildren
   '/_authenticated/account': typeof AuthenticatedAccountRoute
+  '/auth_/reset': typeof AuthResetRoute
   '/shop/$slug': typeof ShopSlugRoute
 }
 export interface FileRouteTypes {
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/shop'
     | '/account'
+    | '/auth/reset'
     | '/shop/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/shop'
     | '/account'
+    | '/auth/reset'
     | '/shop/$slug'
   id:
     | '__root__'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/shop'
     | '/_authenticated/account'
+    | '/auth_/reset'
     | '/shop/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -177,6 +189,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
   ShopRoute: typeof ShopRouteWithChildren
+  AuthResetRoute: typeof AuthResetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/auth_/reset': {
+      id: '/auth_/reset'
+      path: '/auth/reset'
+      fullPath: '/auth/reset'
+      preLoaderRoute: typeof AuthResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shop/$slug': {
       id: '/shop/$slug'
       path: '/$slug'
@@ -300,6 +320,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,
   ShopRoute: ShopRouteWithChildren,
+  AuthResetRoute: AuthResetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

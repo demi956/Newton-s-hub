@@ -68,7 +68,8 @@ export type Availability = {
 const LOW_STOCK = 2;
 
 export function variantAvailability(v: CatalogVariant | undefined | null): Availability {
-  if (!v) return { status: "unknown", label: "Ask availability", quantity: null, purchasable: false };
+  if (!v)
+    return { status: "unknown", label: "Ask availability", quantity: null, purchasable: false };
   const exact = (v.stock_tracking_mode ?? "exact") === "exact";
   const qty = exact && typeof v.stock_quantity === "number" ? v.stock_quantity : null;
   if (v.availability_status === "out_of_stock" || (qty !== null && qty <= 0))
@@ -78,7 +79,12 @@ export function variantAvailability(v: CatalogVariant | undefined | null): Avail
   if (qty !== null && qty <= LOW_STOCK)
     return { status: "low_stock", label: `Only ${qty} left`, quantity: qty, purchasable: true };
   // status_only variants (e.g. phones) have no exact count, so no quantity is claimed.
-  return { status: "in_stock", label: qty === null ? "Available" : "In stock", quantity: qty, purchasable: true };
+  return {
+    status: "in_stock",
+    label: qty === null ? "Available" : "In stock",
+    quantity: qty,
+    purchasable: true,
+  };
 }
 
 /** Best availability across a product's variants (for cards and lists). */

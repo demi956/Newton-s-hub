@@ -14,7 +14,8 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { FloatingDock } from "@/components/assistant/NewtonAssistant";
+import { WishlistProvider } from "@/lib/wishlist";
 import { CartProvider } from "@/lib/cart";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -82,20 +83,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#050e17" },
+      { name: "color-scheme", content: "dark" },
       { name: "author", content: "Newton's Hub" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap",
+        rel: "preload",
+        href: "/fonts/sora-latin-var.woff2",
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "preload",
+        href: "/fonts/manrope-latin-var.woff2",
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous",
       },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -106,7 +118,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <HeadContent />
       </head>
@@ -137,16 +149,24 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
-        <div className="flex min-h-screen flex-col">
-          <SiteHeader />
-          <main className="flex-1">
-            {/* Required: nested routes render here. */}
-            <Outlet />
-          </main>
-          <SiteFooter />
-        </div>
-        <WhatsAppButton />
-        <Toaster position="top-center" richColors />
+        <WishlistProvider>
+          <a
+            href="#main"
+            className="sr-only z-[60] rounded-full bg-primary px-4 py-2 font-semibold text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-3"
+          >
+            Skip to content
+          </a>
+          <div className="flex min-h-screen flex-col">
+            <SiteHeader />
+            <main id="main" className="flex-1">
+              {/* Required: nested routes render here. */}
+              <Outlet />
+            </main>
+            <SiteFooter />
+          </div>
+          <FloatingDock />
+          <Toaster position="top-center" theme="dark" richColors closeButton />
+        </WishlistProvider>
       </CartProvider>
     </QueryClientProvider>
   );

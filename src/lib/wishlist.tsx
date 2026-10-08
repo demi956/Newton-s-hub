@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -84,20 +93,22 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       if (!user) {
         writeLocal(next);
       } else {
-        save({ data: adding ? { add: [productId], remove: [] } : { add: [], remove: [productId] } }).catch(
-          () => {
-            // Roll back so the heart reflects what is actually saved.
-            setIds((current) => {
-              const reverted = new Set(current);
-              if (adding) reverted.delete(productId);
-              else reverted.add(productId);
-              return reverted;
-            });
-            toast.error("Couldn't update your wishlist. Please try again.");
-          },
-        );
+        save({
+          data: adding ? { add: [productId], remove: [] } : { add: [], remove: [productId] },
+        }).catch(() => {
+          // Roll back so the heart reflects what is actually saved.
+          setIds((current) => {
+            const reverted = new Set(current);
+            if (adding) reverted.delete(productId);
+            else reverted.add(productId);
+            return reverted;
+          });
+          toast.error("Couldn't update your wishlist. Please try again.");
+        });
       }
-      toast.success(adding ? `Saved${name ? ` ${name}` : ""} to your wishlist` : "Removed from wishlist");
+      toast.success(
+        adding ? `Saved${name ? ` ${name}` : ""} to your wishlist` : "Removed from wishlist",
+      );
     },
     [ids, user, save],
   );

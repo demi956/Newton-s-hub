@@ -77,7 +77,11 @@ function fromUrl(url: string, sku?: string | null): ResolvedImage {
     const local = localPhoto(match[1]);
     if (local) return local;
   }
-  return { src: url, color: sku ? LOCAL_PHOTOS[sku.toUpperCase()] : undefined, isPlaceholder: false };
+  return {
+    src: url,
+    color: sku ? LOCAL_PHOTOS[sku.toUpperCase()] : undefined,
+    isPlaceholder: false,
+  };
 }
 
 /** All images for a product, primary first, falling back to the local photo, then a placeholder. */
@@ -100,6 +104,9 @@ export function productImages(product: {
   return [{ src: placeholder, isPlaceholder: true }];
 }
 
-export function primaryImage(product: { sku?: string | null; images?: ImageRow[] | null }) {
-  return productImages(product)[0];
+export function primaryImage(product: {
+  sku?: string | null;
+  images?: ImageRow[] | null;
+}): ResolvedImage {
+  return productImages(product)[0] ?? { src: placeholder, isPlaceholder: true };
 }

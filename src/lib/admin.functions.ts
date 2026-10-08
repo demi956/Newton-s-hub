@@ -122,42 +122,44 @@ export const adminListOrders = createServerFn({ method: "GET" })
     if (data.status) query = query.eq("order_status", data.status);
     if (data.search) {
       const term = data.search.replace(/[%_,().*\\]/g, " ").trim();
-      if (term) query = query.or(`order_number.ilike.%${term}%,full_name.ilike.%${term}%,phone.ilike.%${term}%`);
+      if (term)
+        query = query.or(
+          `order_number.ilike.%${term}%,full_name.ilike.%${term}%,phone.ilike.%${term}%`,
+        );
     }
     const { data: rows, error } = await query;
     if (error) fail("Unable to load orders.");
     return rows ?? [];
   });
 
+const adminUpdateOrderSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("set_status"),
+    order_id: z.string().uuid(),
+    status: z.enum(["processing", "ready", "out_for_delivery", "delivered", "cancelled"]),
+    note: z.string().trim().max(500).optional(),
+  }),
+  z.object({
+    action: z.literal("set_delivery_fee"),
+    order_id: z.string().uuid(),
+    fee: z.number().min(0).max(10000),
+  }),
+  z.object({
+    action: z.literal("confirm_payment"),
+    order_id: z.string().uuid(),
+    note: z.string().trim().max(500).optional(),
+  }),
+  z.object({
+    action: z.literal("reject_payment"),
+    order_id: z.string().uuid(),
+    note: z.string().trim().max(500).optional(),
+  }),
+]);
+export type AdminOrderUpdate = z.infer<typeof adminUpdateOrderSchema>;
+
 export const adminUpdateOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z
-      .discriminatedUnion("action", [
-        z.object({
-          action: z.literal("set_status"),
-          order_id: z.string().uuid(),
-          status: z.enum(["processing", "ready", "out_for_delivery", "delivered", "cancelled"]),
-          note: z.string().trim().max(500).optional(),
-        }),
-        z.object({
-          action: z.literal("set_delivery_fee"),
-          order_id: z.string().uuid(),
-          fee: z.number().min(0).max(10000),
-        }),
-        z.object({
-          action: z.literal("confirm_payment"),
-          order_id: z.string().uuid(),
-          note: z.string().trim().max(500).optional(),
-        }),
-        z.object({
-          action: z.literal("reject_payment"),
-          order_id: z.string().uuid(),
-          note: z.string().trim().max(500).optional(),
-        }),
-      ])
-      .parse(data),
-  )
+  .inputValidator((data: unknown) => adminUpdateOrderSchema.parse(data))
   .handler(async ({ data, context }) => {
     const db = context.supabase;
     await assertAdmin(db);
@@ -177,10 +179,13 @@ export const adminUpdateOrder = createServerFn({ method: "POST" })
       });
 
     if (data.action === "confirm_payment") {
-      const { error: rpcError } = await db.rpc("admin_confirm_order_payment" as never, {
-        _order_id: order.id,
-        _note: data.note ?? null,
-      } as never);
+      const { error: rpcError } = await db.rpc(
+        "admin_confirm_order_payment" as never,
+        {
+          _order_id: order.id,
+          _note: data.note ?? null,
+        } as never,
+      );
       if (rpcError) {
         const msg = rpcError.message ?? "";
         if (msg.includes("insufficient_stock"))
@@ -195,7 +200,8 @@ export const adminUpdateOrder = createServerFn({ method: "POST" })
     }
 
     if (data.action === "reject_payment") {
-      if (order.payment_status === "successful") fail("A confirmed payment can't be rejected here.");
+      if (order.payment_status === "successful")
+        fail("A confirmed payment can't be rejected here.");
       const p = await db
         .from("payments")
         .update({ status: "failed" })
@@ -206,7 +212,10 @@ export const adminUpdateOrder = createServerFn({ method: "POST" })
         .update({ payment_status: "pending", order_status: "pending" })
         .eq("id", order.id);
       if (p.error || o.error) fail("Unable to update the payment.");
-      await history("pending", data.note || "Payment reference could not be verified. Customer may resubmit.");
+      await history(
+        "pending",
+        data.note || "Payment reference could not be verified. Customer may resubmit.",
+      );
       return { ok: true };
     }
 
@@ -224,10 +233,7 @@ export const adminUpdateOrder = createServerFn({ method: "POST" })
 
     // set_status
     if (order.order_status === "cancelled") fail("This order is cancelled.");
-    if (
-      data.status !== "cancelled" &&
-      order.payment_status !== "successful"
-    )
+    if (data.status !== "cancelled" && order.payment_status !== "successful")
       fail("Confirm the payment before moving this order forward.");
     const { error: statusError } = await db
       .from("orders")
@@ -266,18 +272,17 @@ export const adminListRequests = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+const adminUpdateRequestSchema = z.object({
+  id: z.string().uuid(),
+  admin_status: z.enum(REQUEST_STATUSES),
+  admin_offer: z.number().min(0).max(100000).nullable(),
+  admin_notes: z.string().trim().max(2000).nullable(),
+});
+export type AdminRequestUpdate = z.infer<typeof adminUpdateRequestSchema>;
+
 export const adminUpdateRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        id: z.string().uuid(),
-        admin_status: z.enum(REQUEST_STATUSES),
-        admin_offer: z.number().min(0).max(100000).nullable(),
-        admin_notes: z.string().trim().max(2000).nullable(),
-      })
-      .parse(data),
-  )
+  .inputValidator((data: unknown) => adminUpdateRequestSchema.parse(data))
   .handler(async ({ data, context }) => {
     const db = context.supabase;
     await assertAdmin(db);
@@ -314,23 +319,23 @@ export const adminListProducts = createServerFn({ method: "GET" })
 
 const money = z.number().min(0).max(1_000_000);
 
+const adminUpdateVariantSchema = z
+  .object({
+    id: z.string().uuid(),
+    price: money,
+    sale_price: money.nullable(),
+    stock_quantity: z.number().int().min(0).max(100000).nullable(),
+    availability_status: z.enum(["available", "out_of_stock", "preorder", "inactive"]),
+    active: z.boolean(),
+  })
+  .refine((d) => d.sale_price === null || d.sale_price <= d.price, {
+    message: "Sale price must be lower than the regular price.",
+  });
+export type AdminVariantUpdate = z.infer<typeof adminUpdateVariantSchema>;
+
 export const adminUpdateVariant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        id: z.string().uuid(),
-        price: money,
-        sale_price: money.nullable(),
-        stock_quantity: z.number().int().min(0).max(100000).nullable(),
-        availability_status: z.enum(["available", "out_of_stock", "preorder", "inactive"]),
-        active: z.boolean(),
-      })
-      .refine((d) => d.sale_price === null || d.sale_price <= d.price, {
-        message: "Sale price must be lower than the regular price.",
-      })
-      .parse(data),
-  )
+  .inputValidator((data: unknown) => adminUpdateVariantSchema.parse(data))
   .handler(async ({ data, context }) => {
     const db = context.supabase;
     await assertAdmin(db);
@@ -340,39 +345,48 @@ export const adminUpdateVariant = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const adminUpdateProductSchema = z.object({
+  id: z.string().uuid(),
+  active: z.boolean(),
+  featured: z.boolean(),
+  description: z.string().trim().max(3000).nullable(),
+  image_url: z
+    .string()
+    .trim()
+    .max(600)
+    .refine((v) => v === "" || /^https:\/\/\S+$/i.test(v) || /^\/products\/[\w.-]+$/.test(v), {
+      message: "Use an https:// image link or a /products/… path.",
+    })
+    .optional(),
+});
+export type AdminProductUpdate = z.infer<typeof adminUpdateProductSchema>;
+
 export const adminUpdateProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        id: z.string().uuid(),
-        active: z.boolean(),
-        featured: z.boolean(),
-        description: z.string().trim().max(3000).nullable(),
-        image_url: z
-          .string()
-          .trim()
-          .max(600)
-          .refine((v) => v === "" || /^https:\/\/\S+$/i.test(v) || /^\/products\/[\w.-]+$/.test(v), {
-            message: "Use an https:// image link or a /products/… path.",
-          })
-          .optional(),
-      })
-      .parse(data),
-  )
+  .inputValidator((data: unknown) => adminUpdateProductSchema.parse(data))
   .handler(async ({ data, context }) => {
     const db = context.supabase;
     await assertAdmin(db);
     const { error } = await db
       .from("products")
-      .update({ active: data.active, featured: data.featured, description: data.description || null })
+      .update({
+        active: data.active,
+        featured: data.featured,
+        description: data.description || null,
+      })
       .eq("id", data.id);
     if (error) fail("Unable to save the product.");
     if (data.image_url) {
-      const demote = await db.from("product_images").update({ is_primary: false }).eq("product_id", data.id);
-      const insert = await db
+      const demote = await db
         .from("product_images")
-        .insert({ product_id: data.id, image_url: data.image_url, is_primary: true, sort_order: 0 });
+        .update({ is_primary: false })
+        .eq("product_id", data.id);
+      const insert = await db.from("product_images").insert({
+        product_id: data.id,
+        image_url: data.image_url,
+        is_primary: true,
+        sort_order: 0,
+      });
       if (demote.error || insert.error) fail("Product saved, but the image could not be added.");
     }
     return { ok: true };
@@ -396,21 +410,29 @@ export const adminListBundleOrders = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+const adminUpdateBundleOrderSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum([
+    "pending",
+    "payment_confirmed",
+    "processing",
+    "completed",
+    "failed",
+    "cancelled",
+  ]),
+});
+export type AdminBundleUpdate = z.infer<typeof adminUpdateBundleOrderSchema>;
+
 export const adminUpdateBundleOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        id: z.string().uuid(),
-        status: z.enum(["pending", "payment_confirmed", "processing", "completed", "failed", "cancelled"]),
-      })
-      .parse(data),
-  )
+  .inputValidator((data: unknown) => adminUpdateBundleOrderSchema.parse(data))
   .handler(async ({ data, context }) => {
     const db = context.supabase;
     await assertAdmin(db);
     const payment_status =
-      data.status === "payment_confirmed" || data.status === "processing" || data.status === "completed"
+      data.status === "payment_confirmed" ||
+      data.status === "processing" ||
+      data.status === "completed"
         ? ("successful" as const)
         : data.status === "failed" || data.status === "cancelled"
           ? ("failed" as const)
@@ -437,15 +459,22 @@ export const adminListMessages = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+const adminUpdateMessageSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(["new", "in_progress", "resolved"]),
+});
+export type AdminMessageUpdate = z.infer<typeof adminUpdateMessageSchema>;
+
 export const adminUpdateMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z.object({ id: z.string().uuid(), status: z.enum(["new", "in_progress", "resolved"]) }).parse(data),
-  )
+  .inputValidator((data: unknown) => adminUpdateMessageSchema.parse(data))
   .handler(async ({ data, context }) => {
     const db = context.supabase;
     await assertAdmin(db);
-    const { error } = await db.from("contact_messages").update({ status: data.status }).eq("id", data.id);
+    const { error } = await db
+      .from("contact_messages")
+      .update({ status: data.status })
+      .eq("id", data.id);
     if (error) fail("Unable to update the message.");
     return { ok: true };
   });

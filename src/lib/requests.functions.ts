@@ -4,7 +4,14 @@ import { requireSupabaseAuth } from "./auth-middleware";
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().or(z.literal(""));
 
-export const DEVICE_TYPES = ["Phone", "Tablet", "Laptop", "Smart watch", "Earbuds / audio", "Other"] as const;
+export const DEVICE_TYPES = [
+  "Phone",
+  "Tablet",
+  "Laptop",
+  "Smart watch",
+  "Earbuds / audio",
+  "Other",
+] as const;
 
 export const submitBuySwapRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -31,10 +38,16 @@ export const submitBuySwapRequest = createServerFn({ method: "POST" })
         customer_notes: optionalText(1000),
         ownership_confirmed: z.boolean(),
       })
-      .refine((d) => d.request_type === "sell" || (d.desired_device ?? "").length > 1 || !!d.desired_product_id, {
-        message: "Tell us which device you'd like to swap for.",
-        path: ["desired_device"],
-      })
+      .refine(
+        (d) =>
+          d.request_type === "sell" ||
+          (d.desired_device ?? "").length > 1 ||
+          !!d.desired_product_id,
+        {
+          message: "Tell us which device you'd like to swap for.",
+          path: ["desired_device"],
+        },
+      )
       .parse(data),
   )
   .handler(async ({ data, context }) => {
