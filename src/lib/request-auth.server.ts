@@ -1,38 +1,34 @@
-﻿import { getRequest } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/react-start/server";
+import { redirect } from "@tanstack/react-router";
 import { publicClient } from "./supabase-public.server";
+import { loginHref } from "./auth-redirect";
 
-// Missing credentials mean guest; invalid credentials must never become guest.
-export async function requestIdentity() {
-  const header = getRequest().headers.get("authorization");
-  if (!header) return null;
-  const match = /^Bearer (\S+)$/.exec(header);
-  if (!match) throw new Error("Unauthorized. Please sign in again.");
-  const { data, error } = await publicClient().auth.getUser(match[1]);
-  if (error || !data.user) throw new Error("Unauthorized. Please sign in again.");
-  return data.user.id;
+export async function requireRequestAuth() {
+  const request = getRequest();
+  const token = /^Bearer (\S+)$/i.exec(request.headers.get("authorization") ?? "")?.[1];
+  const deny = (): never => {
+    let destination = "/account";
+    try {
+      const referrer = new URL(request.headers.get("referer") ?? "");
+      if (referrer.origin === new URL(request.url).origin) destination = referrer.pathname + referrer.search;
+    } catch { /* Direct API requests have no return destination. */ }
+    throw redirect({ href: loginHref(destination), statusCode: 303 });
+  };
+  if (!token) return deny();
+  const supabase = publicClient(token);
+  // Ask Supabase Auth for the current user; never trust decoded JWTs or browser IDs.
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data.user) return deny();
+  return { supabase, userId: data.user.id, user: data.user };
 }
 
 export async function authorizeOrder(
-  order: { customer_id: string | null; phone: string } | null,
-  userId: string | null,
-  phone?: string,
+  order: { customer_id: string | null } | null,
+  userId: string,
 ) {
-  const denied = () => {
-    throw new Error("Order unavailable or verification failed.");
-  };
-  if (!order) return denied();
-  if (userId) {
-    if (order.customer_id === userId) return;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    if (error) return denied();
-    if (data === true) return;
-    return denied();
-  }
-  const normalize = (value: string) => value.replace(/[\s()+-]/g, "");
-  if (order.customer_id !== null || !phone || normalize(phone) !== normalize(order.phone))
-    return denied();
+  if (!userId || !order) throw new Error("Order unavailable or verification failed.");
+  if (order.customer_id === userId) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.rpc("has_role", { _user_id: userId, _role: "admin" });
+  if (error || data !== true) throw new Error("Order unavailable or verification failed.");
 }

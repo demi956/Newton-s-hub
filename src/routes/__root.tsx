@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -119,6 +120,19 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  useEffect(() => {
+    let identity: string | null | undefined;
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextIdentity = session?.user.id ?? null;
+      if (identity !== undefined && identity !== nextIdentity) {
+        queryClient.clear();
+        void router.invalidate();
+      }
+      identity = nextIdentity;
+    });
+    return () => data.subscription.unsubscribe();
+  }, [queryClient, router]);
 
   return (
     <QueryClientProvider client={queryClient}>

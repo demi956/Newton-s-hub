@@ -1,4 +1,5 @@
-﻿import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
+import { requireRouteAuth } from "@/lib/auth-guard";
+﻿import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getAdminAccess, getAdminDashboard } from "@/lib/admin.functions";
@@ -7,9 +8,8 @@ import { formatGHS } from "@/lib/format";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
-  beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+  beforeLoad: async ({ location }) => {
+    await requireRouteAuth({ location });
     if (!(await getAdminAccess())) throw new Error("Unauthorized");
   },
   loader: () => getAdminDashboard(),

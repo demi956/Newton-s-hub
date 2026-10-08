@@ -25,7 +25,7 @@ function Account() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const fetchOrders = useServerFn(listMyOrders);
-  const { data, isLoading } = useQuery({ queryKey: ["my-orders"], queryFn: () => fetchOrders() });
+  const { data, isLoading } = useQuery({ queryKey: ["my-orders", user?.id], enabled: !!user, queryFn: () => fetchOrders() });
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">

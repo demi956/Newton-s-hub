@@ -1,3 +1,4 @@
+import { requireRouteAuth } from "@/lib/auth-guard";
 ﻿import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -13,6 +14,8 @@ import { submitBuySwapRequest } from "@/lib/requests.functions";
 import { BUSINESS } from "@/lib/business";
 
 export const Route = createFileRoute("/buy-sell-swap")({
+  ssr: false,
+  beforeLoad: requireRouteAuth,
   head: () => ({
     meta: [
       { title: "Sell or swap your phone â€” Newton's Hub" },

@@ -1,7 +1,9 @@
+import { requireSupabaseAuth } from "./auth-middleware";
 ﻿import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const submitBuySwapRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -20,9 +22,8 @@ export const submitBuySwapRequest = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
-    const { requestIdentity } = await import("./request-auth.server");
-    const userId = await requestIdentity();
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
     if (!data.ownership_confirmed) {
       throw new Error("Please confirm that the device belongs to you.");
     }
@@ -54,6 +55,7 @@ export const submitBuySwapRequest = createServerFn({ method: "POST" })
   });
 
 export const submitContactMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -65,9 +67,8 @@ export const submitContactMessage = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
-    const { requestIdentity } = await import("./request-auth.server");
-    const userId = await requestIdentity();
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("contact_messages").insert({
       name: data.name,

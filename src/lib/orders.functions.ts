@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireSupabaseAuth } from "@/lib/auth-middleware";
 
 const orderInput = z.object({
   items: z
@@ -19,10 +19,10 @@ const orderInput = z.object({
 });
 
 export const createOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => orderInput.parse(data))
-  .handler(async ({ data }) => {
-    const { requestIdentity, authorizeOrder } = await import("./request-auth.server");
-    const userId = await requestIdentity();
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const ids = data.items.map((i) => i.variantId);
@@ -119,6 +119,7 @@ export const createOrder = createServerFn({ method: "POST" })
   });
 
 export const submitMomoReference = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -128,9 +129,8 @@ export const submitMomoReference = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
-    const { requestIdentity, authorizeOrder } = await import("./request-auth.server");
-    const userId = await requestIdentity();
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error: lookupError } = await supabaseAdmin
       .from("orders")
@@ -140,7 +140,8 @@ export const submitMomoReference = createServerFn({ method: "POST" })
       .eq("id", data.order_id)
       .maybeSingle();
     if (lookupError) throw new Error("Order unavailable or verification failed.");
-    await authorizeOrder(order, userId, data.phone);
+    const { authorizeOrder } = await import("./request-auth.server");
+    await authorizeOrder(order, userId);
     if (!order) throw new Error("Order unavailable or verification failed.");
     if (order.order_status !== "pending" || order.payment_status !== "pending") {
       throw new Error("This order is not accepting payment references. Please contact the shop.");
@@ -190,6 +191,7 @@ export const submitMomoReference = createServerFn({ method: "POST" })
   });
 
 export const getOrderByNumber = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -198,9 +200,8 @@ export const getOrderByNumber = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
-    const { requestIdentity, authorizeOrder } = await import("./request-auth.server");
-    const userId = await requestIdentity();
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error } = await supabaseAdmin
       .from("orders")
@@ -213,7 +214,8 @@ export const getOrderByNumber = createServerFn({ method: "POST" })
       throw new Error(
         "Unable to complete the order request. Please try again or contact the shop.",
       );
-    await authorizeOrder(order, userId, data.phone);
+    const { authorizeOrder } = await import("./request-auth.server");
+    await authorizeOrder(order, userId);
     if (!order) throw new Error("Order unavailable or verification failed.");
     const { customer_id: _customerId, phone: _phone, ...safeOrder } = order;
     return safeOrder;
@@ -237,6 +239,7 @@ export const listMyOrders = createServerFn({ method: "GET" })
   });
 
 export const createBundleOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
@@ -245,9 +248,8 @@ export const createBundleOrder = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
-    const { requestIdentity, authorizeOrder } = await import("./request-auth.server");
-    const userId = await requestIdentity();
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: bundle, error: bErr } = await supabaseAdmin
       .from("data_bundles")

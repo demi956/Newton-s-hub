@@ -1,3 +1,4 @@
+import { requireRouteAuth } from "@/lib/auth-guard";
 ﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -15,6 +16,8 @@ import { BUSINESS } from "@/lib/business";
 import { createOrder, submitMomoReference } from "@/lib/orders.functions";
 
 export const Route = createFileRoute("/checkout")({
+  ssr: false,
+  beforeLoad: requireRouteAuth,
   head: () => ({
     meta: [
       { title: "Checkout â€” Newton's Hub" },

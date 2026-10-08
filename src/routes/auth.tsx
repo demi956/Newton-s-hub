@@ -1,3 +1,4 @@
+import { safeReturnTo, loginHref } from "@/lib/auth-redirect";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => ({ redirect: safeReturnTo(search["redirect"]) }),
   head: () => ({
     meta: [
       { title: "Sign in — Newton's Hub" },
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { redirect: returnTo } = Route.useSearch();
   const { user } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -34,8 +37,8 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/account" });
-  }, [user, navigate]);
+    if (user) navigate({ href: returnTo, replace: true });
+  }, [user, navigate, returnTo]);
 
   async function handleSubmit() {
     setBusy(true);
@@ -45,7 +48,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + loginHref(returnTo),
             data: { first_name: firstName },
           },
         });
@@ -55,7 +58,7 @@ function AuthPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/account" });
+        navigate({ href: returnTo, replace: true });
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Something went wrong");
@@ -66,14 +69,14 @@ function AuthPage() {
 
   async function handleGoogle() {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: window.location.origin + loginHref(returnTo),
     });
     if (result.error) {
       toast.error("Google sign-in didn't work. Please try again.");
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/account" });
+    navigate({ href: returnTo, replace: true });
   }
 
   return (
