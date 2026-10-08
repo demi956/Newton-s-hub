@@ -11,6 +11,7 @@ import {
   type CatalogProduct,
 } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
+import { primaryImage } from "@/lib/product-media";
 
 const SORTS = {
   featured: "Recommended",
@@ -117,9 +118,9 @@ function Shop() {
       sorted.sort(
         (a, b) =>
           Number(productAvailability(b).purchasable) - Number(productAvailability(a).purchasable) ||
+          Number(primaryImage(a).isPlaceholder) - Number(primaryImage(b).isPlaceholder) ||
           Number(b.featured) - Number(a.featured) ||
-          CATEGORY_ORDER.indexOf((a.subcategory ?? "") as never) -
-            CATEGORY_ORDER.indexOf((b.subcategory ?? "") as never),
+          CATEGORY_ORDER.indexOf((a.subcategory ?? "") as never) - CATEGORY_ORDER.indexOf((b.subcategory ?? "") as never),
       );
     return sorted;
   }, [products, category, search.q, search.instock, sort]);
@@ -138,7 +139,7 @@ function Shop() {
       </div>
 
       {/* Sticky filter bar */}
-      <div className="sticky top-14 z-20 -mx-4 mt-5 border-b border-border bg-background/90 px-4 pb-3 pt-3 backdrop-blur-xl sm:top-16 sm:mx-0 sm:rounded-2xl sm:border sm:px-4">
+      <div className="z-20 -mx-4 mt-5 border-b border-border bg-background/90 px-4 pb-3 pt-3 backdrop-blur-xl sm:mx-0 sm:rounded-2xl sm:border sm:px-4 md:sticky md:top-16">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

@@ -284,7 +284,7 @@ function ProductPage() {
               {!availability.purchasable ? "Out of stock" : added ? "Added to cart" : "Add to cart"}
             </Button>
           </div>
-          <div className="mt-3 hidden gap-3 md:flex">
+          <div className="mt-6 flex gap-3 md:mt-3">
             <Button
               variant="secondary"
               size="lg"
@@ -376,7 +376,7 @@ function ProductPage() {
 
       {/* Thumb-friendly sticky purchase bar on phones */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl md:hidden">
-        <div className="flex items-center gap-3 pr-[4.5rem]">
+        <div className="flex items-center gap-3">
           <QtyStepper qty={qty} setQty={setQty} max={max} compact />
           <Button
             className={cn(

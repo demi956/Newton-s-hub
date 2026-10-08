@@ -78,7 +78,11 @@ function Bundles() {
   const { bundles, services } = Route.useLoaderData();
   const { user } = useAuth();
   const list = useMemo(() => (bundles ?? []) as unknown as Bundle[], [bundles]);
-  const networks = useMemo(() => [...new Set(list.map((b) => b.network))], [list]);
+  const networks = useMemo(() => {
+    const order = ["MTN", "AT (AirtelTigo)", "Telecel"];
+    const rank = (n: string) => (order.indexOf(n) === -1 ? 99 : order.indexOf(n));
+    return [...new Set(list.map((b) => b.network))].sort((a, b) => rank(a) - rank(b));
+  }, [list]);
   const [network, setNetwork] = useState<string | undefined>(undefined);
   const active = network ?? networks[0];
   const shown = list.filter((b) => b.network === active);

@@ -77,6 +77,8 @@ function writeSession(key: string, value: unknown) {
 export function FloatingDock() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const hidden = pathname.startsWith("/admin");
+  // Product pages have a sticky purchase bar on phones; float above it.
+  const lifted = /^\/shop\/[^/]+/.test(pathname);
   const ask = useServerFn(askAssistant);
 
   const [phase, setPhase] = useState<Phase>("idle");
@@ -241,7 +243,8 @@ export function FloatingDock() {
           onFocus={() => (pausedRef.current = true)}
           onBlur={() => (pausedRef.current = false)}
           className={cn(
-            "fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] right-4 z-50 w-[min(22rem,calc(100vw-2rem))] origin-bottom-right sm:right-6",
+            "fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] right-3 z-50 w-[min(22rem,calc(100vw-1.5rem))] origin-bottom-right sm:right-6",
+            lifted && "max-md:bottom-[calc(9.75rem+env(safe-area-inset-bottom))]",
             "transition-[opacity,transform] duration-[420ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
             phase === "minimizing"
               ? "translate-x-3 translate-y-10 scale-[0.2] opacity-0"
@@ -436,7 +439,8 @@ export function FloatingDock() {
       {/* Floating action group: WhatsApp above, assistant below. Never overlaps. */}
       <div
         className={cn(
-          "fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-40 flex flex-col items-end gap-3 sm:right-6",
+          "fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-3 z-40 flex flex-col items-end gap-2.5 sm:right-6 sm:gap-3",
+          lifted && "max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))]",
           phase === "open" && "max-sm:hidden",
         )}
       >
@@ -445,7 +449,7 @@ export function FloatingDock() {
           target="_blank"
           rel="noreferrer"
           aria-label="Chat with Newton's Hub on WhatsApp"
-          className="group flex size-12 items-center justify-center rounded-full bg-whatsapp text-white shadow-[0_10px_25px_-8px_rgb(37_211_102/0.6)] transition-transform hover:scale-105 active:scale-95"
+          className="group flex size-11 items-center justify-center rounded-full bg-whatsapp sm:size-12 text-white shadow-[0_10px_25px_-8px_rgb(37_211_102/0.6)] transition-transform hover:scale-105 active:scale-95"
         >
           <WhatsAppGlyph className="size-6" />
         </a>
@@ -458,7 +462,7 @@ export function FloatingDock() {
           }
           aria-expanded={phase === "open"}
           className={cn(
-            "group relative flex size-[3.75rem] items-center justify-center rounded-full p-[3px] shadow-[0_14px_30px_-10px_rgb(0_0_0/0.8)] transition-transform hover:scale-105 active:scale-95",
+            "group relative flex size-14 items-center sm:size-[3.75rem] justify-center rounded-full p-[3px] shadow-[0_14px_30px_-10px_rgb(0_0_0/0.8)] transition-transform hover:scale-105 active:scale-95",
             phase === "minimizing" && "animate-bump",
           )}
           style={{

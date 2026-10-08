@@ -33,7 +33,7 @@ export function AvailabilityPill({ status, label }: { status: string; label: str
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold",
         STATUS_STYLE[status] ?? STATUS_STYLE["unknown"],
       )}
     >
@@ -128,7 +128,7 @@ export function ProductCard({
         </span>
       )}
 
-      <div className="flex flex-1 flex-col gap-2 p-3.5 sm:p-4">
+      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
         <p className="truncate text-xs text-muted-foreground">
           {product.brand ?? product.subcategory}
         </p>
@@ -137,24 +137,20 @@ export function ProductCard({
             {product.name}
           </Link>
         </h3>
-        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
-          <div className="min-w-0">
-            <p className="font-display text-base font-semibold sm:text-lg">
-              {range ? (
-                <>
-                  {range.min !== range.max && (
-                    <span className="mr-1 text-xs font-medium text-muted-foreground">from</span>
-                  )}
-                  {formatGHS(range.min)}
-                </>
-              ) : (
-                "Ask price"
+        <p className="whitespace-nowrap font-display text-[15px] font-semibold sm:text-lg">
+          {range ? (
+            <>
+              {range.min !== range.max && (
+                <span className="mr-1 text-xs font-medium text-muted-foreground">from</span>
               )}
-            </p>
-            <div className="mt-1">
-              <AvailabilityPill status={availability.status} label={availability.label} />
-            </div>
-          </div>
+              {formatGHS(range.min)}
+            </>
+          ) : (
+            "Ask price"
+          )}
+        </p>
+        <div className="mt-auto flex items-center justify-between gap-2">
+          <AvailabilityPill status={availability.status} label={availability.label} />
           {only && variantAvailability(only).purchasable ? (
             <button
               type="button"
