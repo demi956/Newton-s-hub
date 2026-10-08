@@ -16,20 +16,51 @@ const orderInput = z.object({
   delivery_address: z.string().max(400).optional().or(z.literal("")),
   landmark: z.string().max(200).optional().or(z.literal("")),
   notes: z.string().max(1000).optional().or(z.literal("")),
+  client_request_id: z.string().uuid().optional(),
 });
+
+const ORDER_ERRORS: Record<string, string> = {
+  insufficient_stock: "Some items don't have enough stock left. Please reduce the quantity or contact the shop.",
+  item_unavailable: "Some items are no longer available. Please review your cart.",
+  invalid_items: "Your cart couldn't be read. Please review it and try again.",
+  invalid_details: "Please enter your full name and a valid phone number.",
+  invalid_quantity: "Quantities must be between 1 and 20 per item.",
+};
 
 export const createOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => orderInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { items, client_request_id, ...details } = data;
+    // Preferred path: one database transaction that locks stock and prices server-side.
+    const { data: rows, error } = await context.supabase.rpc("place_order" as never, {
+      _items: items.map((i) => ({ variant_id: i.variantId, quantity: i.quantity })),
+      _details: details,
+      _client_request_id: client_request_id ?? null,
+    } as never);
+    if (!error) {
+      const row = (rows as unknown as Array<{ id: string; order_number: string; subtotal: number }>)[0];
+      if (!row) throw new Error("Unable to complete the order request. Please try again.");
+      return { id: row.id, order_number: row.order_number, subtotal: Number(row.subtotal) };
+    }
+    const code = (error as { code?: string }).code;
+    const known = Object.keys(ORDER_ERRORS).find((key) => error.message?.includes(key));
+    if (known) throw new Error(ORDER_ERRORS[known]);
+    // PGRST202 / 42883: migration 20261008090000 not applied yet, so use the original path.
+    if (code !== "PGRST202" && code !== "42883") {
+      throw new Error("Unable to complete the order request. Please try again or contact the shop.");
+    }
+    return legacyCreateOrder(data, context.userId);
+  });
+
+async function legacyCreateOrder(data: z.infer<typeof orderInput>, userId: string) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const ids = data.items.map((i) => i.variantId);
     const { data: variants, error: vErr } = await supabaseAdmin
       .from("product_variants")
       .select(
-        "id, sku, storage, color, condition, price, sale_price, active, availability_status, product:products ( id, name, active )",
+        "id, sku, storage, color, condition, price, sale_price, active, availability_status, stock_quantity, stock_tracking_mode, product:products ( id, name, active )",
       )
       .in("id", ids)
       .eq("active", true);
@@ -47,6 +78,11 @@ export const createOrder = createServerFn({ method: "POST" })
       )
     ) {
       throw new Error("Some items are no longer available. Please review your cart.");
+    }
+    for (const item of data.items) {
+      const v = variants.find((row) => row.id === item.variantId)!;
+      if (v.stock_tracking_mode === "exact" && v.stock_quantity !== null && v.stock_quantity < item.quantity)
+        throw new Error(ORDER_ERRORS["insufficient_stock"]);
     }
     // Server-side authoritative pricing.
     let subtotal = 0;
@@ -116,7 +152,7 @@ export const createOrder = createServerFn({ method: "POST" })
     if (historyError)
       throw new Error("Order created, but history could not be updated. Please contact the shop.");
     return { id: order.id, order_number: order.order_number, subtotal: Number(order.subtotal) };
-  });
+}
 
 export const submitMomoReference = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -280,4 +316,17 @@ export const createBundleOrder = createServerFn({ method: "POST" })
         "Unable to complete the order request. Please try again or contact the shop.",
       );
     return { id: row.id, order_number: row.order_number, amount: Number(row.amount) };
+  });
+
+export const listMyBundleOrders = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("bundle_orders")
+      .select("id, order_number, receiving_phone, amount, status, payment_status, created_at, bundle:data_bundles ( network, name )")
+      .eq("customer_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) throw new Error("Unable to load your data bundle requests right now.");
+    return data ?? [];
   });
