@@ -1,5 +1,5 @@
 import { requireRouteAuth } from "@/lib/auth-guard";
-﻿import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getAdminAccess, getAdminDashboard } from "@/lib/admin.functions";

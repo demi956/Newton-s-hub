@@ -1,4 +1,4 @@
-﻿import { createServerFn } from "@tanstack/react-start";
+import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/lib/auth-middleware";
 
 export const getAdminAccess = createServerFn({ method: "GET" })

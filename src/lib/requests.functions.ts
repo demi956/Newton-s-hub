@@ -1,5 +1,5 @@
 import { requireSupabaseAuth } from "./auth-middleware";
-﻿import { createServerFn } from "@tanstack/react-start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const submitBuySwapRequest = createServerFn({ method: "POST" })

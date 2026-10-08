@@ -1,4 +1,4 @@
-﻿import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -53,7 +53,7 @@ function Contact() {
           <Info label="Second number" value={BUSINESS.secondaryPhone} />
           <Info label="Email" value={BUSINESS.email} />
           <Info label="Instagram" value={BUSINESS.instagram} />
-          <Info label="Pickup" value={BUSINESS.pickupLocations.join(" Â· ")} />
+          <Info label="Pickup" value={BUSINESS.pickupLocations.join(" · ")} />
           <Info label="Delivery" value="Anywhere in Ghana. " />
         </div>
 
@@ -67,7 +67,7 @@ function Contact() {
       <div className="surface-card h-fit p-6">
         {sent ? (
           <p className="text-sm">
-            Thanks â€” we&apos;ve got your message and will get back to you.
+            Thanks — we&apos;ve got your message and will get back to you.
           </p>
         ) : (
           <div className="space-y-4">
@@ -113,7 +113,7 @@ function Contact() {
               }
               onClick={() => mutation.mutate()}
             >
-              {mutation.isPending ? "Sendingâ€¦" : "Send message"}
+              {mutation.isPending ? "Sending…" : "Send message"}
             </Button>
           </div>
         )}

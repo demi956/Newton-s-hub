@@ -1,4 +1,4 @@
-﻿# Admin setup and security validation
+# Admin setup and security validation
 
 Apply only the new migration `20260912120000_secure_submission_policies.sql` to the existing Supabase project using its normal migration process or SQL Editor. Do not replay the initial schema blueprints or reset the database. This closes direct REST submission paths; website submissions use validated server functions.
 

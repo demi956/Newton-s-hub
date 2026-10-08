@@ -1,5 +1,5 @@
 import { requireRouteAuth } from "@/lib/auth-guard";
-﻿import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -18,13 +18,13 @@ export const Route = createFileRoute("/buy-sell-swap")({
   beforeLoad: requireRouteAuth,
   head: () => ({
     meta: [
-      { title: "Sell or swap your phone â€” Newton's Hub" },
+      { title: "Sell or swap your phone — Newton's Hub" },
       {
         name: "description",
         content:
           "Tell Newton's Hub about your phone and we'll review it. Every sell or swap offer is agreed in person after we inspect the device.",
       },
-      { property: "og:title", content: "Sell or swap your phone â€” Newton's Hub" },
+      { property: "og:title", content: "Sell or swap your phone — Newton's Hub" },
       {
         property: "og:description",
         content: "Submit your device details and we'll come back with an offer.",
@@ -170,7 +170,7 @@ function BuySellSwap() {
           }
           onClick={() => mutation.mutate()}
         >
-          {mutation.isPending ? "Sendingâ€¦" : "Submit request"}
+          {mutation.isPending ? "Sending…" : "Submit request"}
         </Button>
       </div>
     </div>

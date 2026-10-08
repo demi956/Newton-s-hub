@@ -1,5 +1,5 @@
 import { requireRouteAuth } from "@/lib/auth-guard";
-﻿import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -20,13 +20,13 @@ export const Route = createFileRoute("/checkout")({
   beforeLoad: requireRouteAuth,
   head: () => ({
     meta: [
-      { title: "Checkout â€” Newton's Hub" },
+      { title: "Checkout — Newton's Hub" },
       {
         name: "description",
         content:
           "Place your Newton's Hub order: choose pickup or delivery, then pay by mobile money. Delivery fee is confirmed after you order.",
       },
-      { property: "og:title", content: "Checkout â€” Newton's Hub" },
+      { property: "og:title", content: "Checkout — Newton's Hub" },
       { property: "og:description", content: "Place your order with Newton's Hub." },
     ],
   }),
@@ -104,7 +104,7 @@ function Checkout() {
           <div className="mt-6 rounded-lg bg-secondary p-4 text-sm">
             <p className="font-semibold">Pay by mobile money</p>
             <p className="mt-1">
-              {BUSINESS.momo.number} â€” {BUSINESS.momo.accountName}
+              {BUSINESS.momo.number} — {BUSINESS.momo.accountName}
             </p>
             <p className="mt-2 text-muted-foreground">
               Your payment stays pending until Newton&apos;s Hub confirms it.
@@ -125,7 +125,7 @@ function Checkout() {
                 disabled={reference.trim().length < 3 || referenceMutation.isPending}
                 onClick={() => referenceMutation.mutate()}
               >
-                {referenceMutation.isPending ? "Sendingâ€¦" : "Submit payment reference"}
+                {referenceMutation.isPending ? "Sending…" : "Submit payment reference"}
               </Button>
             </div>
           ) : (
@@ -171,7 +171,7 @@ function Checkout() {
               <RadioGroupItem value="delivery" /> Delivery ({BUSINESS.deliveryNote})
             </label>
             <label className="flex items-center gap-3 text-sm">
-              <RadioGroupItem value="pickup" /> Pickup â€” {BUSINESS.pickupLocations.join(" or ")}
+              <RadioGroupItem value="pickup" /> Pickup — {BUSINESS.pickupLocations.join(" or ")}
             </label>
           </RadioGroup>
         </div>
@@ -239,7 +239,7 @@ function Checkout() {
               <span className="min-w-0">
                 <span className="block truncate">{l.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {l.variantLabel} Ã— {l.quantity}
+                  {l.variantLabel} × {l.quantity}
                 </span>
               </span>
               <span className="font-medium">{formatGHS(l.unitPrice * l.quantity)}</span>
@@ -259,7 +259,7 @@ function Checkout() {
           disabled={!valid || orderMutation.isPending}
           onClick={() => orderMutation.mutate()}
         >
-          {orderMutation.isPending ? "Placing orderâ€¦" : "Place order"}
+          {orderMutation.isPending ? "Placing order…" : "Place order"}
         </Button>
       </aside>
     </div>

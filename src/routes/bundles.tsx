@@ -1,4 +1,4 @@
-﻿import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -23,13 +23,13 @@ import { BUSINESS } from "@/lib/business";
 export const Route = createFileRoute("/bundles")({
   head: () => ({
     meta: [
-      { title: "Data bundles & AFA registration â€” Newton's Hub" },
+      { title: "Data bundles & AFA registration — Newton's Hub" },
       {
         name: "description",
         content:
           "Order MTN data bundles and AFA registration from Newton's Hub. Pick a bundle, give us the number, pay by mobile money.",
       },
-      { property: "og:title", content: "Data bundles & AFA registration â€” Newton's Hub" },
+      { property: "og:title", content: "Data bundles & AFA registration — Newton's Hub" },
       {
         property: "og:description",
         content: "MTN data bundles and AFA registration, activated by Newton's Hub.",
@@ -115,7 +115,7 @@ function Bundles() {
                 <h3 className="mt-3 font-semibold">{b.name}</h3>
                 <p className="text-sm text-muted-foreground">
                   {b.validity ?? "Validity confirmed at activation"}
-                  {b.activation_time ? ` Â· ${b.activation_time}` : ""}
+                  {b.activation_time ? ` · ${b.activation_time}` : ""}
                 </p>
                 <Button
                   className="mt-4"
@@ -160,7 +160,7 @@ function Bundles() {
                 onClick={() => mutation.mutate()}
               >
                 {mutation.isPending
-                  ? "Submittingâ€¦"
+                  ? "Submitting…"
                   : `Request for ${formatGHS(selected?.price ?? 0)}`}
               </Button>
             </div>
