@@ -93,6 +93,14 @@ export function SiteFooter() {
             {BUSINESS.returnPolicy} {BUSINESS.deliveryNote}
           </p>
         </div>
+        <p className="mx-auto max-w-7xl px-4 pb-24 text-xs text-muted-foreground/80 sm:px-6 sm:pb-6">
+          Designed &amp; built by{" "}
+          <span className="font-medium text-foreground/80">Seth Abekah</span>
+          <span aria-hidden> · </span>
+          <Link to="/qr" className="hover:text-foreground">
+            Share this shop (QR code)
+          </Link>
+        </p>
       </div>
     </footer>
   );

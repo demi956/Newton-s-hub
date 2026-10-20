@@ -18,6 +18,7 @@ import { Route as BuySellSwapRouteImport } from './routes/buy-sell-swap'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as QrRouteImport } from './routes/qr'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthResetRouteImport } from './routes/auth_.reset'
@@ -67,6 +68,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QrRoute = QrRouteImport.update({
+  id: '/qr',
+  path: '/qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
   path: '/shop',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/qr': typeof QrRoute
   '/shop': typeof ShopRouteWithChildren
   '/account': typeof AuthenticatedAccountRoute
   '/auth/reset': typeof AuthResetRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/qr': typeof QrRoute
   '/shop': typeof ShopRouteWithChildren
   '/account': typeof AuthenticatedAccountRoute
   '/auth/reset': typeof AuthResetRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/qr': typeof QrRoute
   '/shop': typeof ShopRouteWithChildren
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/auth_/reset': typeof AuthResetRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/contact'
+    | '/qr'
     | '/shop'
     | '/account'
     | '/auth/reset'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/contact'
+    | '/qr'
     | '/shop'
     | '/account'
     | '/auth/reset'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/contact'
+    | '/qr'
     | '/shop'
     | '/_authenticated/account'
     | '/auth_/reset'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
+  QrRoute: typeof QrRoute
   ShopRoute: typeof ShopRouteWithChildren
   AuthResetRoute: typeof AuthResetRoute
 }
@@ -257,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/qr': {
+      id: '/qr'
+      path: '/qr'
+      fullPath: '/qr'
+      preLoaderRoute: typeof QrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shop': {
       id: '/shop'
       path: '/shop'
@@ -319,6 +339,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,
+  QrRoute: QrRoute,
   ShopRoute: ShopRouteWithChildren,
   AuthResetRoute: AuthResetRoute,
 }
