@@ -18,6 +18,7 @@ import { Route as BuySellSwapRouteImport } from './routes/buy-sell-swap'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as PhotoCreditsRouteImport } from './routes/photo-credits'
 import { Route as QrRouteImport } from './routes/qr'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
@@ -68,6 +69,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PhotoCreditsRoute = PhotoCreditsRouteImport.update({
+  id: '/photo-credits',
+  path: '/photo-credits',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QrRoute = QrRouteImport.update({
   id: '/qr',
   path: '/qr',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/photo-credits': typeof PhotoCreditsRoute
   '/qr': typeof QrRoute
   '/shop': typeof ShopRouteWithChildren
   '/account': typeof AuthenticatedAccountRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/photo-credits': typeof PhotoCreditsRoute
   '/qr': typeof QrRoute
   '/shop': typeof ShopRouteWithChildren
   '/account': typeof AuthenticatedAccountRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
+  '/photo-credits': typeof PhotoCreditsRoute
   '/qr': typeof QrRoute
   '/shop': typeof ShopRouteWithChildren
   '/_authenticated/account': typeof AuthenticatedAccountRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/contact'
+    | '/photo-credits'
     | '/qr'
     | '/shop'
     | '/account'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/contact'
+    | '/photo-credits'
     | '/qr'
     | '/shop'
     | '/account'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/contact'
+    | '/photo-credits'
     | '/qr'
     | '/shop'
     | '/_authenticated/account'
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
+  PhotoCreditsRoute: typeof PhotoCreditsRoute
   QrRoute: typeof QrRoute
   ShopRoute: typeof ShopRouteWithChildren
   AuthResetRoute: typeof AuthResetRoute
@@ -268,6 +281,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/photo-credits': {
+      id: '/photo-credits'
+      path: '/photo-credits'
+      fullPath: '/photo-credits'
+      preLoaderRoute: typeof PhotoCreditsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/qr': {
@@ -339,6 +359,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,
+  PhotoCreditsRoute: PhotoCreditsRoute,
   QrRoute: QrRoute,
   ShopRoute: ShopRouteWithChildren,
   AuthResetRoute: AuthResetRoute,

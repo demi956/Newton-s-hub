@@ -21,12 +21,12 @@ const LOCAL_PHOTOS: Record<string, string> = {
   "NWH-014": "#7a706d",
   "NWH-015": "#867168",
   "NWH-016": "#756d5f",
-  "NWH-017": "#716a63",
+  "NWH-017": "#7b726a",
   "NWH-018": "#77736f",
   "NWH-019": "#776a67",
   "NWH-020": "#6a6a69",
   "NWH-021": "#958f85",
-  "NWH-022": "#7b726a",
+  "NWH-022": "#716a63",
   "NWH-023": "#7b675a",
   "NWH-024": "#837970",
   "NWH-025": "#938e7f",
@@ -38,6 +38,41 @@ const LOCAL_PHOTOS: Record<string, string> = {
   "NWH-031": "#77716e",
   "NWH-032": "#685d5a",
   "NWH-033": "#7c6b63",
+};
+
+/**
+ * Reference photos for phone models (by product slug), under /public/products/phones.
+ * These are freely licensed Wikimedia Commons photos of the model, not Newton's Hub's own
+ * stock, so they are flagged as reference images in the UI. Credits: /photo-credits.
+ */
+const PHONE_PHOTOS: Record<string, string> = {
+  "galaxy-a06": "#7c7d7e",
+  "galaxy-a07": "#86769b",
+  "galaxy-a16": "#608b8e",
+  "galaxy-a17": "#7c8ca3",
+  "iphone-11": "#897768",
+  "iphone-11-pro": "#6a6b6a",
+  "iphone-12": "#eceef1",
+  "iphone-12-pro": "#9d8d83",
+  "iphone-12-pro-max": "#7a7f7d",
+  "iphone-13": "#9e9f99",
+  "iphone-13-pro": "#954147",
+  "iphone-13-pro-max": "#2f2428",
+  "iphone-14": "#bc515e",
+  "iphone-14-plus": "#8b8983",
+  "iphone-14-pro": "#8f8d87",
+  "iphone-14-pro-max": "#676276",
+  "iphone-15": "#a4a2ae",
+  "iphone-15-pro": "#955466",
+  "iphone-15-pro-max": "#a2a3aa",
+  "iphone-16": "#71615a",
+  "iphone-16-plus": "#ac929d",
+  "iphone-16-pro": "#96867f",
+  "iphone-16-pro-max": "#91919c",
+  "iphone-17": "#797370",
+  "iphone-17-pro": "#9f8b77",
+  "iphone-17-pro-max": "#8d6345",
+  "iphone-xr": "#996f66",
 };
 
 export const PLACEHOLDER_IMAGE = placeholder;
@@ -53,6 +88,8 @@ export type ResolvedImage = {
   srcSet?: string | undefined;
   color?: string | undefined;
   isPlaceholder: boolean;
+  /** A model reference photo rather than a photo of the shop's own stock. */
+  isReference?: boolean | undefined;
 };
 
 /** Local photo for a SKU, if Newton's Hub supplied one. */
@@ -67,6 +104,21 @@ export function localPhoto(sku: string | null | undefined): ResolvedImage | null
     srcSet: `${base}-480.webp 480w, ${base}-900.webp 900w`,
     color,
     isPlaceholder: false,
+  };
+}
+
+/** Reference photo for a phone model, by product slug. */
+export function phonePhoto(slug: string | null | undefined): ResolvedImage | null {
+  if (!slug) return null;
+  const color = PHONE_PHOTOS[slug];
+  if (!color) return null;
+  const base = `/products/phones/${slug}`;
+  return {
+    src: `${base}-900.webp`,
+    srcSet: `${base}-480.webp 480w, ${base}-900.webp 900w`,
+    color,
+    isPlaceholder: false,
+    isReference: true,
   };
 }
 
@@ -87,6 +139,7 @@ function fromUrl(url: string, sku?: string | null): ResolvedImage {
 /** All images for a product, primary first, falling back to the local photo, then a placeholder. */
 export function productImages(product: {
   sku?: string | null;
+  slug?: string | null;
   images?: ImageRow[] | null;
 }): ResolvedImage[] {
   const rows = [...(product.images ?? [])]
@@ -99,13 +152,14 @@ export function productImages(product: {
   const seen = new Set<string>();
   const unique = resolved.filter((img) => (seen.has(img.src) ? false : (seen.add(img.src), true)));
   if (unique.length) return unique;
-  const local = localPhoto(product.sku);
+  const local = localPhoto(product.sku) ?? phonePhoto(product.slug);
   if (local) return [local];
   return [{ src: placeholder, isPlaceholder: true }];
 }
 
 export function primaryImage(product: {
   sku?: string | null;
+  slug?: string | null;
   images?: ImageRow[] | null;
 }): ResolvedImage {
   return productImages(product)[0] ?? { src: placeholder, isPlaceholder: true };

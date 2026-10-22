@@ -95,10 +95,21 @@ export function SiteFooter() {
         </div>
         <p className="mx-auto max-w-7xl px-4 pb-24 text-xs text-muted-foreground/80 sm:px-6 sm:pb-6">
           Designed &amp; built by{" "}
-          <span className="font-medium text-foreground/80">Seth Abekah</span>
+          <a
+            href="https://nexora-studio-bay.vercel.app"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-foreground/80 hover:text-primary"
+          >
+            Seth Abekah
+          </a>
           <span aria-hidden> · </span>
           <Link to="/qr" className="hover:text-foreground">
             Share this shop (QR code)
+          </Link>
+          <span aria-hidden> · </span>
+          <Link to="/photo-credits" className="hover:text-foreground">
+            Photo credits
           </Link>
         </p>
       </div>

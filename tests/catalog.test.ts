@@ -8,6 +8,8 @@ import {
   type CatalogVariant,
 } from "../src/lib/catalog";
 import { localPhoto, productImages } from "../src/lib/product-media";
+import { PHONE_PHOTO_CREDITS } from "../src/lib/photo-credits";
+import { existsSync } from "node:fs";
 import { safeReturnTo } from "../src/lib/auth-redirect";
 import { formatGHS } from "../src/lib/format";
 
@@ -108,6 +110,19 @@ describe("product images", () => {
   test("products without photos get the honest placeholder tile", () => {
     const [img] = productImages({ sku: null, images: [] });
     expect(img?.isPlaceholder).toBe(true);
+  });
+  test("every phone model has a credited reference photo on disk", () => {
+    for (const c of PHONE_PHOTO_CREDITS) {
+      const [img] = productImages({ sku: null, slug: c.slug, images: [] });
+      expect(img?.isReference).toBe(true);
+      expect(img?.src).toBe(`/products/phones/${c.slug}-900.webp`);
+      for (const w of [480, 900])
+        expect(existsSync(`public/products/phones/${c.slug}-${w}.webp`)).toBe(true);
+    }
+    expect(PHONE_PHOTO_CREDITS).toHaveLength(27);
+  });
+  test("accessory photos are never labelled as reference photos", () => {
+    expect(localPhoto("NWH-013")?.isReference).toBeFalsy();
   });
 });
 
