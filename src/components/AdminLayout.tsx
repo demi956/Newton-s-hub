@@ -1,35 +1,44 @@
-﻿import { Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { Box, Inbox, LayoutDashboard, Package, Repeat2, Wifi } from "lucide-react";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
-const sections = [
-  "Products",
-  "Inventory",
-  "Orders",
-  "Bundle Orders",
-  "Customers",
-  "Buy/Sell/Swap",
-  "Payments",
-  "Messages",
-  "Settings",
-];
-export function AdminLayout({ children }: { children: ReactNode }) {
+export const ADMIN_TABS = [
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "orders", label: "Orders", icon: Package },
+  { key: "requests", label: "Sell & swap", icon: Repeat2 },
+  { key: "products", label: "Products & stock", icon: Box },
+  { key: "data", label: "Data requests", icon: Wifi },
+  { key: "messages", label: "Messages", icon: Inbox },
+] as const;
+export type AdminTab = (typeof ADMIN_TABS)[number]["key"];
+
+export function AdminLayout({ tab, children }: { tab: AdminTab; children: ReactNode }) {
   return (
-    <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:grid-cols-[200px_1fr]">
-      <aside>
-        <h1 className="mb-5 font-display text-xl font-semibold">Newton's Hub Admin</h1>
-        <nav aria-label="Admin navigation" className="flex flex-col gap-2">
-          <Link to="/admin" className="rounded-lg bg-secondary px-3 py-2 font-semibold">
-            Dashboard
-          </Link>
-          {sections.map((section) => (
-            <span
-              key={section}
-              aria-disabled="true"
-              className="px-3 py-2 text-sm text-muted-foreground"
+    <div className="mx-auto grid max-w-7xl gap-6 px-4 pb-16 pt-6 sm:px-6 md:grid-cols-[13rem_1fr] md:gap-8 md:pt-10">
+      <aside className="md:sticky md:top-24 md:self-start">
+        <h1 className="font-display text-lg font-bold">
+          Newton&apos;s Hub <span className="text-primary">Admin</span>
+        </h1>
+        <nav
+          aria-label="Admin sections"
+          className="no-scrollbar -mx-4 mt-4 flex gap-1 overflow-x-auto px-4 md:mx-0 md:flex-col md:px-0"
+        >
+          {ADMIN_TABS.map((t) => (
+            <Link
+              key={t.key}
+              to="/admin"
+              search={{ tab: t.key }}
+              aria-current={tab === t.key ? "page" : undefined}
+              className={cn(
+                "flex h-10 shrink-0 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-colors",
+                tab === t.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+              )}
             >
-              {section}
-              <span className="block text-xs">Coming soon</span>
-            </span>
+              <t.icon className="size-4" /> {t.label}
+            </Link>
           ))}
         </nav>
       </aside>
