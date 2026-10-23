@@ -15,8 +15,9 @@ export type AdminTab = (typeof ADMIN_TABS)[number]["key"];
 
 export function AdminLayout({ tab, children }: { tab: AdminTab; children: ReactNode }) {
   return (
-    <div className="mx-auto grid max-w-7xl gap-6 px-4 pb-16 pt-6 sm:px-6 md:grid-cols-[13rem_1fr] md:gap-8 md:pt-10">
-      <aside className="md:sticky md:top-24 md:self-start">
+    <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-6 px-4 pb-16 pt-6 sm:px-6 md:grid-cols-[13rem_minmax(0,1fr)] md:gap-8 md:pt-10">
+      {/* min-w-0: the tab strip scrolls sideways on phones instead of widening the page */}
+      <aside className="min-w-0 md:sticky md:top-24 md:self-start">
         <h1 className="font-display text-lg font-bold">
           Newton&apos;s Hub <span className="text-primary">Admin</span>
         </h1>
