@@ -1,4 +1,4 @@
-﻿-- Public submissions go through validated server functions using the server client.
+-- Public submissions go through validated server functions using the server client.
 -- Prevent direct REST inserts from forging identity, offers, status or other fields.
 begin;
 drop policy if exists contact_insert on public.contact_messages;

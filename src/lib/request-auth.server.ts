@@ -10,8 +10,11 @@ export async function requireRequestAuth() {
     let destination = "/account";
     try {
       const referrer = new URL(request.headers.get("referer") ?? "");
-      if (referrer.origin === new URL(request.url).origin) destination = referrer.pathname + referrer.search;
-    } catch { /* Direct API requests have no return destination. */ }
+      if (referrer.origin === new URL(request.url).origin)
+        destination = referrer.pathname + referrer.search;
+    } catch {
+      /* Direct API requests have no return destination. */
+    }
     throw redirect({ href: loginHref(destination), statusCode: 303 });
   };
   if (!token) return deny();
@@ -22,10 +25,7 @@ export async function requireRequestAuth() {
   return { supabase, userId: data.user.id, user: data.user };
 }
 
-export async function authorizeOrder(
-  order: { customer_id: string | null } | null,
-  userId: string,
-) {
+export async function authorizeOrder(order: { customer_id: string | null } | null, userId: string) {
   if (!userId || !order) throw new Error("Order unavailable or verification failed.");
   if (order.customer_id === userId) return;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
