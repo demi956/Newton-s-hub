@@ -14,10 +14,47 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { FloatingDock } from "@/components/assistant/NewtonAssistant";
 import { WishlistProvider } from "@/lib/wishlist";
 import { CartProvider } from "@/lib/cart";
 import { Toaster } from "@/components/ui/sonner";
+import { BUSINESS } from "@/lib/business";
+import { SITE_URL, absoluteUrl } from "@/lib/site";
+
+// Tells Google this is a real local shop (name, phone, towns, Instagram), which helps it show
+// up in local searches and Maps panels for "phone shop Tarkwa" and similar.
+const LOCAL_BUSINESS_JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "MobilePhoneStore",
+  name: BUSINESS.name,
+  slogan: "We buy. We sell. We swap.",
+  url: SITE_URL,
+  logo: absoluteUrl("/icons/icon-512.png"),
+  image: absoluteUrl("/og-image.jpg"),
+  telephone: "+233" + BUSINESS.phone.replace(/^0/, ""),
+  email: BUSINESS.email,
+  priceRange: "GH₵",
+  currenciesAccepted: "GHS",
+  paymentAccepted: "Mobile money",
+  areaServed: { "@type": "Country", name: "Ghana" },
+  address: [
+    {
+      "@type": "PostalAddress",
+      addressLocality: "Tarkwa",
+      addressRegion: "Western",
+      addressCountry: "GH",
+      streetAddress: "UMaT Campus",
+    },
+    {
+      "@type": "PostalAddress",
+      addressLocality: "Breman Essiam",
+      addressRegion: "Central",
+      addressCountry: "GH",
+    },
+  ],
+  sameAs: [BUSINESS.instagramUrl],
+});
 
 function NotFoundComponent() {
   return (
@@ -87,9 +124,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "theme-color", content: "#050e17" },
       { name: "color-scheme", content: "dark" },
       { name: "author", content: "Newton's Hub" },
+      { name: "application-name", content: "Newton's Hub" },
+      { name: "apple-mobile-web-app-title", content: "Newton's Hub" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "format-detection", content: "telephone=no" },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Newton's Hub" },
+      { property: "og:locale", content: "en_GH" },
+      // Default share preview (WhatsApp, Instagram, X, Facebook); pages may override it.
+      { property: "og:image", content: absoluteUrl("/og-image.jpg") },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Newton's Hub — where quality meets affordability" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: absoluteUrl("/og-image.jpg") },
     ],
+    scripts: [{ type: "application/ld+json", children: LOCAL_BUSINESS_JSON_LD }],
     links: [
       { rel: "stylesheet", href: appCss },
       {
@@ -106,6 +158,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         type: "font/woff2",
         crossOrigin: "anonymous",
       },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
@@ -146,6 +199,15 @@ function RootComponent() {
     return () => data.subscription.unsubscribe();
   }, [queryClient, router]);
 
+  // Register the service worker (installable app + offline page). Production only, so local
+  // development never serves stale files.
+  useEffect(() => {
+    if (!import.meta.env.PROD || !("serviceWorker" in navigator)) return;
+    const register = () => void navigator.serviceWorker.register("/sw.js").catch(() => {});
+    if (document.readyState === "complete") register();
+    else window.addEventListener("load", register, { once: true });
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
@@ -163,6 +225,7 @@ function RootComponent() {
               <Outlet />
             </main>
             <SiteFooter />
+            <MobileTabBar />
           </div>
           <FloatingDock />
           <Toaster position="top-center" theme="dark" richColors closeButton />

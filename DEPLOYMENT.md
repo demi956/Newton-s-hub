@@ -58,6 +58,7 @@ See `.env.example` for descriptions.
 | `SUPABASE_SERVICE_ROLE_KEY` | **yes** | server-only secret; checkout, sell/swap, contact and admin need it |
 | `ANTHROPIC_API_KEY` | recommended | enables Newton's AI language model; without it the assistant answers from built-in catalog rules |
 | `AI_MODEL` | no | defaults to `claude-haiku-5-5` |
+| `SITE_URL`, `VITE_SITE_URL` | no | public address for sitemap, canonical links and share previews (default `https://newton-s-hub.vercel.app`) |
 | `VITE_ENABLE_GOOGLE_AUTH` | no | `true` only after configuring Google in Supabase Auth |
 
 Never put the service role key or Anthropic key in a `VITE_` variable — those are bundled into
@@ -114,3 +115,21 @@ bun run dev
   public URL) — see `PRODUCT_IMAGES.md`.
 - Lovable sync: pushing to the Lovable-connected branch updates the Lovable editor. Don't
   force-push or rewrite pushed history.
+
+## Keeping the database awake
+
+Supabase's free plan pauses a project after about a week without activity. While paused, the
+catalog, sign-in and sign-up all fail. `vercel.json` schedules a daily Vercel Cron call to
+`/api/health`, which runs one tiny query to keep the project active. `/api/health` returns
+`{"ok":true}` (200) when the database is reachable and 503 when it is not, so it also works as an
+uptime check. If the project does pause, restore it from the Supabase dashboard.
+
+## Email delivery for sign-up and password reset
+
+Supabase's built-in email sender only delivers to members of your Supabase team and is limited
+to a few emails per hour, so customers may never receive confirmation or reset emails. Either:
+
+- turn off **Authentication → Sign In / Providers → Email → Confirm email** (customers are
+  signed in straight after sign-up; the app already handles this), and/or
+- set up custom SMTP (e.g. Resend's free plan) under **Authentication → Emails → SMTP Settings**
+  so confirmation and password-reset emails reach everyone.

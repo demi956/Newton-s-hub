@@ -32,6 +32,28 @@ export const Route = createFileRoute("/auth")({
 
 type Mode = "signin" | "signup" | "forgot";
 
+/** Turns Supabase Auth errors into plain advice a shopper can act on. */
+function friendlyAuthError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  const status = (err as { status?: number } | null)?.status;
+  if (/failed to fetch|networkerror|load failed|fetch failed|network request failed/i.test(msg))
+    return "We can't reach Newton's Hub right now. Check your data or Wi-Fi and try again — or message us on WhatsApp.";
+  if (/invalid login|invalid credentials/i.test(msg))
+    return "That email and password don't match. Try again or reset your password.";
+  if (/not confirmed/i.test(msg))
+    return "Please confirm your email first — check your inbox (and spam folder) for the link.";
+  if (/already registered|already exists|user_already_exists/i.test(msg))
+    return "There's already an account with this email. Sign in instead, or reset your password.";
+  if (status === 429 || /rate limit|too many|security purposes/i.test(msg))
+    return "Too many attempts in a short time. Please wait a minute and try again.";
+  if (/password/i.test(msg) && /(weak|short|characters|least)/i.test(msg))
+    return "Please choose a stronger password — at least 6 characters, mixing letters and numbers.";
+  if (/invalid.*email|email.*invalid/i.test(msg)) return "That email address doesn't look right.";
+  if (status !== undefined && status >= 500)
+    return "Sign-in is having a moment on our side. Please try again shortly.";
+  return msg || "Something went wrong. Please try again.";
+}
+
 /** Google sign-in runs through Lovable's broker on Lovable hosting, or Supabase OAuth when enabled. */
 function googleMode(): "lovable" | "supabase" | null {
   if (typeof window === "undefined") return null;
@@ -46,7 +68,7 @@ function AuthPage() {
   const { redirect: returnTo } = Route.useSearch();
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>("signin");
-  const [email, setEmail] = useState("");
+  const [rawEmail, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -59,7 +81,7 @@ function AuthPage() {
     if (user) void navigate({ href: returnTo, replace: true });
   }, [user, navigate, returnTo]);
 
-  const emailOk = /^\S+@\S+\.\S+$/.test(email);
+  const emailOk = /^\S+@\S+\.\S+$/.test(rawEmail.trim());
   const passwordOk = password.length >= 6;
   const canSubmit =
     emailOk &&
@@ -71,6 +93,7 @@ function AuthPage() {
     if (!canSubmit || busy) return;
     setBusy(true);
     setNotice(null);
+    const email = rawEmail.trim().toLowerCase();
     try {
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
@@ -82,6 +105,17 @@ function AuthPage() {
           },
         });
         if (error) throw error;
+        // With email confirmation on, Supabase hides whether an email is taken: it "succeeds"
+        // but returns a user with no identities and sends nothing. Say so instead of
+        // promising an email that will never arrive.
+        if (data.user && !data.session && (data.user.identities?.length ?? 0) === 0) {
+          setMode("signin");
+          setNotice(null);
+          toast.error(
+            "There's already an account with this email. Sign in, or use “Forgot password?” to get back in.",
+          );
+          return;
+        }
         if (data.session) {
           toast.success(`Welcome to Newton's Hub, ${firstName.trim()}!`);
         } else {
@@ -103,14 +137,7 @@ function AuthPage() {
         void navigate({ href: returnTo, replace: true });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Something went wrong";
-      toast.error(
-        /invalid login/i.test(msg)
-          ? "That email and password don't match. Try again or reset your password."
-          : /not confirmed/i.test(msg)
-            ? "Please confirm your email first — check your inbox for the link."
-            : msg,
-      );
+      toast.error(friendlyAuthError(err));
     } finally {
       setBusy(false);
     }
@@ -128,7 +155,7 @@ function AuthPage() {
         provider: "google",
         options: { redirectTo },
       });
-      if (error) toast.error("Google sign-in didn't work. Please try again.");
+      if (error) toast.error(friendlyAuthError(error));
     }
   }
 
@@ -198,7 +225,7 @@ function AuthPage() {
               inputMode="email"
               autoComplete="email"
               className="mt-1.5 h-11"
-              value={email}
+              value={rawEmail}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>

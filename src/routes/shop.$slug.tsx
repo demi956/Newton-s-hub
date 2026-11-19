@@ -18,6 +18,7 @@ import { getProductBySlug } from "@/lib/catalog.functions";
 import {
   activeVariants,
   maxOrderable,
+  productAvailability,
   unitPrice,
   variantAvailability,
   variantLabel,
@@ -30,6 +31,8 @@ import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";
 import { BUSINESS, whatsappLink } from "@/lib/business";
 import { cn } from "@/lib/utils";
+import { absoluteUrl } from "@/lib/site";
+import { ShareButton } from "@/components/ShareButton";
 
 const shopRoute = getRouteApi("/shop");
 
@@ -56,8 +59,40 @@ export const Route = createFileRoute("/shop/$slug")({
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        ...(image && !image.isPlaceholder ? [{ property: "og:image", content: image.src }] : []),
+        ...(image && !image.isPlaceholder
+          ? [{ property: "og:image", content: absoluteUrl(image.src) }]
+          : []),
+        { property: "og:type", content: "product" },
       ],
+      links: p ? [{ rel: "canonical", href: absoluteUrl(`/shop/${p.slug}`) }] : [],
+      // Product rich results: lets Google show price and stock under the search listing.
+      scripts:
+        p && price !== undefined
+          ? [
+              {
+                type: "application/ld+json",
+                children: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "Product",
+                  name: p.name,
+                  ...(p.brand ? { brand: { "@type": "Brand", name: p.brand } } : {}),
+                  sku: p.sku,
+                  ...(image && !image.isPlaceholder ? { image: absoluteUrl(image.src) } : {}),
+                  description,
+                  offers: {
+                    "@type": "Offer",
+                    url: absoluteUrl(`/shop/${p.slug}`),
+                    priceCurrency: "GHS",
+                    price,
+                    availability: productAvailability(p).purchasable
+                      ? "https://schema.org/InStock"
+                      : "https://schema.org/OutOfStock",
+                    seller: { "@type": "Organization", name: "Newton's Hub" },
+                  },
+                }),
+              },
+            ]
+          : [],
     };
   },
   notFoundComponent: () => (
@@ -179,6 +214,12 @@ function ProductPage() {
                 )}
               />
             </button>
+            <ShareButton
+              className="absolute right-3 top-16"
+              title={product.name}
+              text={`${product.name} at Newton's Hub`}
+              url={absoluteUrl(`/shop/${product.slug}`)}
+            />
           </div>
           {images.length > 1 && (
             <div className="mt-3 flex gap-2 overflow-x-auto">

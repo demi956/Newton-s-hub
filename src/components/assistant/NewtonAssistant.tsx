@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { showsTabBar } from "@/lib/tab-bar";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowUp, ChevronDown, MessageCircle, RotateCcw, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
@@ -77,8 +78,9 @@ function writeSession(key: string, value: unknown) {
 export function FloatingDock() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const hidden = pathname.startsWith("/admin");
-  // Product pages have a sticky purchase bar on phones; float above it.
-  const lifted = /^\/shop\/[^/]+/.test(pathname);
+  // Phones: product pages have a sticky purchase bar and most other pages the bottom tab bar;
+  // float above whichever is showing.
+  const lifted = /^\/shop\/[^/]+/.test(pathname) || showsTabBar(pathname);
   const ask = useServerFn(askAssistant);
 
   const [phase, setPhase] = useState<Phase>("idle");

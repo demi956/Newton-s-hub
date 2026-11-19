@@ -7,6 +7,7 @@
 //    so names, prices, availability and images can never be invented by the model.
 //  * Replies that quote a cedi amount not present in the catalog (or in the shopper's own
 //    message) are discarded in favour of the deterministic catalog answer.
+import Anthropic from "@anthropic-ai/sdk";
 import { getRequest } from "@tanstack/react-start/server";
 import { BUSINESS } from "./business";
 import {
@@ -464,6 +465,18 @@ ${catalogForPrompt(s)}
 </catalog>`;
 }
 
+const REPLY_SCHEMA = {
+  type: "object",
+  properties: {
+    reply: { type: "string" },
+    product_slugs: { type: "array", items: { type: "string" } },
+    links: { type: "array", items: { type: "string" } },
+    handoff: { type: "boolean" },
+  },
+  required: ["reply", "product_slugs", "links", "handoff"],
+  additionalProperties: false,
+} as const;
+
 function allowedAmounts(s: Snapshot, history: ChatTurn[]) {
   const set = new Set<number>();
   for (const p of s.products)
@@ -492,33 +505,27 @@ export async function answer(history: ChatTurn[]): Promise<AssistantReply> {
   if (!key) return catalogAnswer(snapshot, last);
 
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 20_000);
-    const base = (process.env["ANTHROPIC_BASE_URL"] || "https://api.anthropic.com").replace(
-      /\/+$/,
-      "",
-    );
-    const res = await fetch(`${base}/v1/messages`, {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: process.env["AI_MODEL"] || "claude-haiku-5-5",
-        max_tokens: 600,
-        temperature: 0.3,
-        system: systemPrompt(snapshot),
-        messages: history.map((m) => ({ role: m.role, content: m.content })),
-      }),
-    }).finally(() => clearTimeout(timer));
-    if (!res.ok) throw new Error(`ai_http_${res.status}`);
-    const body = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
-    const text = (body.content ?? [])
-      .filter((c) => c.type === "text")
-      .map((c) => c.text ?? "")
+    const client = new Anthropic({
+      apiKey: key,
+      timeout: 20_000,
+      maxRetries: 1,
+      ...(process.env["ANTHROPIC_BASE_URL"] ? { baseURL: process.env["ANTHROPIC_BASE_URL"] } : {}),
+    });
+    const res = await client.messages.create({
+      model: process.env["AI_MODEL"] || "claude-haiku-5-5",
+      max_tokens: 2000,
+      // Short shop-floor answers: low effort keeps replies fast and cheap.
+      output_config: { effort: "low", format: { type: "json_schema", schema: REPLY_SCHEMA } },
+      // The system prompt (rules + full catalog) is identical for every shopper for up to a
+      // minute, so cache it: repeat questions read it at ~10% of the normal input price.
+      system: [
+        { type: "text", text: systemPrompt(snapshot), cache_control: { type: "ephemeral" } },
+      ],
+      messages: history.map((m) => ({ role: m.role, content: m.content })),
+    });
+    if (res.stop_reason === "refusal") throw new Error("ai_refusal");
+    const text = res.content
+      .map((c) => (c.type === "text" ? c.text : ""))
       .join("")
       .trim();
     const json = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)) as {
@@ -547,10 +554,17 @@ export async function answer(history: ChatTurn[]): Promise<AssistantReply> {
     const links = SITE_LINKS.filter((l) => paths.includes(l.to)).slice(0, 3);
     return { reply, products, links, handoff: json.handoff === true, source: "ai" };
   } catch (error) {
-    console.error(
-      "[assistant] falling back to catalog answer:",
-      error instanceof Error ? error.message : error,
-    );
+    const reason =
+      error instanceof Anthropic.AuthenticationError
+        ? "invalid ANTHROPIC_API_KEY"
+        : error instanceof Anthropic.RateLimitError
+          ? "rate limited"
+          : error instanceof Anthropic.APIError
+            ? `api ${error.status}: ${error.message}`
+            : error instanceof Error
+              ? error.message
+              : String(error);
+    console.error("[assistant] falling back to catalog answer:", reason);
     return catalogAnswer(snapshot, last);
   }
 }

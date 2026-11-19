@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SITE_URL } from "@/lib/site";
 import { BadgeCheck, MapPin, PackageCheck, Smartphone, Undo2, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HubHero } from "@/components/HubHero";
@@ -30,8 +31,8 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Where quality meets affordability. Phones, accessories and data in Ghana.",
       },
-      { property: "og:image", content: "/products/nwh-013-900.webp" },
     ],
+    links: [{ rel: "canonical", href: SITE_URL + "/" }],
   }),
   loader: async () => {
     const [products, bundles] = await Promise.all([

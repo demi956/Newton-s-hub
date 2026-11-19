@@ -250,7 +250,8 @@ function Shop() {
       {error ? (
         <EmptyState
           title="The catalog didn't load"
-          text="Check your connection and refresh the page. You can still order on WhatsApp."
+          text="Check your connection and try again. You can still order on WhatsApp."
+          retry
         />
       ) : results.length === 0 ? (
         <EmptyState
@@ -311,17 +312,22 @@ function Chip({
   );
 }
 
-function EmptyState({ title, text }: { title: string; text: string }) {
+function EmptyState({ title, text, retry }: { title: string; text: string; retry?: boolean }) {
+  const button =
+    "mt-5 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform active:scale-95";
   return (
     <div className="mx-auto mt-16 max-w-sm text-center">
       <h2 className="font-display text-xl font-semibold">{title}</h2>
       <p className="mt-2 text-sm text-muted-foreground">{text}</p>
-      <Link
-        to="/shop"
-        className="mt-5 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
-      >
-        Show all products
-      </Link>
+      {retry ? (
+        <button type="button" className={button} onClick={() => window.location.reload()}>
+          Try again
+        </button>
+      ) : (
+        <Link to="/shop" className={button}>
+          Show all products
+        </Link>
+      )}
     </div>
   );
 }

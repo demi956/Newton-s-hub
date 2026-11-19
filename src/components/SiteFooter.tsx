@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import { Instagram, Mail, MapPin, Phone } from "lucide-react";
 import mark from "@/assets/brand-mark.webp";
 import { BUSINESS, whatsappLink } from "@/lib/business";
@@ -85,6 +86,9 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-border">
+        <div className="mx-auto max-w-7xl px-4 pt-5 empty:hidden sm:px-6">
+          <InstallAppButton />
+        </div>
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:justify-between sm:px-6">
           <p>
             © {new Date().getFullYear()} {BUSINESS.name}. Prices in Ghana cedis (GH₵).
@@ -93,7 +97,7 @@ export function SiteFooter() {
             {BUSINESS.returnPolicy} {BUSINESS.deliveryNote}
           </p>
         </div>
-        <p className="mx-auto max-w-7xl px-4 pb-24 text-xs text-muted-foreground/80 sm:px-6 sm:pb-6">
+        <p className="mx-auto max-w-7xl px-4 pb-6 text-xs text-muted-foreground/80 sm:px-6">
           Designed &amp; built by{" "}
           <a
             href="https://nexora-studio-bay.vercel.app"

@@ -15,6 +15,11 @@ export const BUSINESS = {
   reservation: "Unpaid reservations are held for one day.",
 } as const;
 
+/** WhatsApp share link with no fixed recipient (the shopper picks a chat). */
+export function whatsappShareLink(message: string) {
+  return `https://wa.me/?text=${encodeURIComponent(message)}`;
+}
+
 export function whatsappLink(message: string) {
   const digits = "233" + BUSINESS.whatsapp.replace(/^0/, "");
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;

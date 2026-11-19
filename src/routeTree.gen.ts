@@ -21,7 +21,9 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as PhotoCreditsRouteImport } from './routes/photo-credits'
 import { Route as QrRouteImport } from './routes/qr'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthResetRouteImport } from './routes/auth_.reset'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 
@@ -84,10 +86,20 @@ const ShopRoute = ShopRouteImport.update({
   path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
   id: '/account',
   path: '/account',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthResetRoute = AuthResetRouteImport.update({
   id: '/auth_/reset',
@@ -112,7 +124,9 @@ export interface FileRoutesByFullPath {
   '/photo-credits': typeof PhotoCreditsRoute
   '/qr': typeof QrRoute
   '/shop': typeof ShopRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/api/health': typeof ApiHealthRoute
   '/auth/reset': typeof AuthResetRoute
   '/shop/$slug': typeof ShopSlugRoute
 }
@@ -128,7 +142,9 @@ export interface FileRoutesByTo {
   '/photo-credits': typeof PhotoCreditsRoute
   '/qr': typeof QrRoute
   '/shop': typeof ShopRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/api/health': typeof ApiHealthRoute
   '/auth/reset': typeof AuthResetRoute
   '/shop/$slug': typeof ShopSlugRoute
 }
@@ -146,7 +162,9 @@ export interface FileRoutesById {
   '/photo-credits': typeof PhotoCreditsRoute
   '/qr': typeof QrRoute
   '/shop': typeof ShopRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
+  '/api/health': typeof ApiHealthRoute
   '/auth_/reset': typeof AuthResetRoute
   '/shop/$slug': typeof ShopSlugRoute
 }
@@ -164,7 +182,9 @@ export interface FileRouteTypes {
     | '/photo-credits'
     | '/qr'
     | '/shop'
+    | '/sitemap.xml'
     | '/account'
+    | '/api/health'
     | '/auth/reset'
     | '/shop/$slug'
   fileRoutesByTo: FileRoutesByTo
@@ -180,7 +200,9 @@ export interface FileRouteTypes {
     | '/photo-credits'
     | '/qr'
     | '/shop'
+    | '/sitemap.xml'
     | '/account'
+    | '/api/health'
     | '/auth/reset'
     | '/shop/$slug'
   id:
@@ -197,7 +219,9 @@ export interface FileRouteTypes {
     | '/photo-credits'
     | '/qr'
     | '/shop'
+    | '/sitemap.xml'
     | '/_authenticated/account'
+    | '/api/health'
     | '/auth_/reset'
     | '/shop/$slug'
   fileRoutesById: FileRoutesById
@@ -215,6 +239,8 @@ export interface RootRouteChildren {
   PhotoCreditsRoute: typeof PhotoCreditsRoute
   QrRoute: typeof QrRoute
   ShopRoute: typeof ShopRouteWithChildren
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   AuthResetRoute: typeof AuthResetRoute
 }
 
@@ -304,12 +330,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/account': {
       id: '/_authenticated/account'
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AuthenticatedAccountRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth_/reset': {
       id: '/auth_/reset'
@@ -362,6 +402,8 @@ const rootRouteChildren: RootRouteChildren = {
   PhotoCreditsRoute: PhotoCreditsRoute,
   QrRoute: QrRoute,
   ShopRoute: ShopRouteWithChildren,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiHealthRoute: ApiHealthRoute,
   AuthResetRoute: AuthResetRoute,
 }
 export const routeTree = rootRouteImport
