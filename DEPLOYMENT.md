@@ -1,7 +1,7 @@
 # Deploying Newton's Hub to Vercel
 
 Newton's Hub is a **TanStack Start** app (React 19, Vite 8, server functions via Nitro) backed by
-**Supabase**. It is *not* a static site: checkout, sell/swap, admin and the AI assistant run as
+**Supabase**. It is _not_ a static site: checkout, sell/swap, admin and the AI assistant run as
 server functions. Vercel runs them as one Node.js serverless function, which Nitro generates
 automatically when it detects the Vercel build environment.
 
@@ -34,32 +34,35 @@ If `20260912120000_secure_submission_policies.sql` was never applied, apply it f
 ## 2. Create the Vercel project
 
 1. Vercel → **Add New → Project** → import `demi956/truthful-data-hub`.
-2. **Framework preset:** *Other*. `vercel.json` already sets:
+2. **Framework preset:** _Other_. `vercel.json` already sets:
    - install: `node scripts/vercel-install.mjs` (installs the exact versions in `bun.lock`
      from the public npm registry — the lockfile points at Lovable's private cache, which
      Vercel cannot reach);
    - build: `bun run build` (Nitro detects Vercel and writes `.vercel/output`).
-   Leave *Output Directory* empty.
+     Leave _Output Directory_ empty.
 3. **Production branch:** choose the branch you want live (after merging this work).
 4. **Node.js version:** 22.x (default is fine).
 
 ## 3. Environment variables
 
-Add these under *Project → Settings → Environment Variables* (Production and Preview).
+Add these under _Project → Settings → Environment Variables_ (Production and Preview).
 See `.env.example` for descriptions.
 
-| Variable | Required | Notes |
-|---|---|---|
-| `SUPABASE_URL` | yes | Supabase project URL |
-| `SUPABASE_PUBLISHABLE_KEY` | yes | publishable / anon key |
-| `VITE_SUPABASE_URL` | yes | same URL (needed at build time for the browser) |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | yes | same publishable key |
-| `SUPABASE_PROJECT_ID`, `VITE_SUPABASE_PROJECT_ID` | recommended | project ref |
-| `SUPABASE_SERVICE_ROLE_KEY` | **yes** | server-only secret; checkout, sell/swap, contact and admin need it |
-| `ANTHROPIC_API_KEY` | recommended | enables Newton's AI language model; without it the assistant answers from built-in catalog rules |
-| `AI_MODEL` | no | defaults to `claude-haiku-5-5` |
-| `SITE_URL`, `VITE_SITE_URL` | no | public address for sitemap, canonical links and share previews (default `https://newton-s-hub.vercel.app`) |
-| `VITE_ENABLE_GOOGLE_AUTH` | no | `true` only after configuring Google in Supabase Auth |
+| Variable                                          | Required    | Notes                                                                                                      |
+| ------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_URL`                                    | yes         | Supabase project URL                                                                                       |
+| `SUPABASE_PUBLISHABLE_KEY`                        | yes         | publishable / anon key                                                                                     |
+| `VITE_SUPABASE_URL`                               | yes         | same URL (needed at build time for the browser)                                                            |
+| `VITE_SUPABASE_PUBLISHABLE_KEY`                   | yes         | same publishable key                                                                                       |
+| `SUPABASE_PROJECT_ID`, `VITE_SUPABASE_PROJECT_ID` | recommended | project ref                                                                                                |
+| `SUPABASE_SERVICE_ROLE_KEY`                       | **yes**     | server-only secret; checkout, sell/swap, contact and admin need it                                         |
+| `ANTHROPIC_API_KEY`                               | recommended | enables Newton's AI language model; without it the assistant answers from built-in catalog rules           |
+| `GROQ_API_KEY`                                    | alternative | free-tier alternative to Claude; used when `ANTHROPIC_API_KEY` is unset (or when `AI_PROVIDER=groq`)       |
+| `GROQ_MODEL`                                      | no          | defaults to `openai/gpt-oss-120b`                                                                          |
+| `AI_PROVIDER`                                     | no          | `groq` or `anthropic` to force one when both keys are set                                                  |
+| `AI_MODEL`                                        | no          | defaults to `claude-haiku-5-5`                                                                             |
+| `SITE_URL`, `VITE_SITE_URL`                       | no          | public address for sitemap, canonical links and share previews (default `https://newton-s-hub.vercel.app`) |
+| `VITE_ENABLE_GOOGLE_AUTH`                         | no          | `true` only after configuring Google in Supabase Auth                                                      |
 
 Never put the service role key or Anthropic key in a `VITE_` variable — those are bundled into
 browser code.
@@ -94,7 +97,7 @@ After the first deploy, check:
 1. `/` loads with product photos; `/shop` lists products; a product page opens.
 2. Sign up → you land on `/account`.
 3. Add to cart → checkout (pickup) → order number shown → submit a test MoMo reference.
-4. As admin: `/admin?tab=orders` → confirm the payment → stock decreases in *Products & stock*.
+4. As admin: `/admin?tab=orders` → confirm the payment → stock decreases in _Products & stock_.
 5. Open Newton's AI → ask "I have GH₵150, what can I buy?" → product cards appear.
 6. `/bundles` → pick a bundle → "Send on WhatsApp" opens WhatsApp with the request.
 
@@ -111,7 +114,7 @@ bun run dev
 - **AI rate limiting** is per server instance (10 messages/minute, 80/hour per IP). For heavier
   traffic, add a shared limiter (e.g. Upstash Redis) in `src/lib/assistant.server.ts`.
 - **Product photos** are served from `/products/*.webp` with long cache headers. New photos can
-  be added in the admin *Products & stock* panel as an `https://` link (e.g. a Supabase Storage
+  be added in the admin _Products & stock_ panel as an `https://` link (e.g. a Supabase Storage
   public URL) — see `PRODUCT_IMAGES.md`.
 - Lovable sync: pushing to the Lovable-connected branch updates the Lovable editor. Don't
   force-push or rewrite pushed history.

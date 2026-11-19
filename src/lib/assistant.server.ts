@@ -498,36 +498,101 @@ function quotesUnknownAmount(reply: string, allowed: Set<number>) {
   return false;
 }
 
+type Provider = { kind: "anthropic" | "groq"; key: string };
+
+/**
+ * Which language model answers shoppers. AI_PROVIDER forces one ("anthropic" or "groq");
+ * otherwise Claude is used when ANTHROPIC_API_KEY is set, then Groq when GROQ_API_KEY is set.
+ * With neither, the assistant answers from the catalog with built-in rules.
+ */
+function pickProvider(): Provider | null {
+  const anthropic = process.env["ANTHROPIC_API_KEY"];
+  const groq = process.env["GROQ_API_KEY"];
+  const forced = process.env["AI_PROVIDER"]?.trim().toLowerCase();
+  if (forced === "groq") return groq ? { kind: "groq", key: groq } : null;
+  if (forced === "anthropic") return anthropic ? { kind: "anthropic", key: anthropic } : null;
+  if (anthropic) return { kind: "anthropic", key: anthropic };
+  if (groq) return { kind: "groq", key: groq };
+  return null;
+}
+
+async function callClaude(key: string, system: string, history: ChatTurn[]): Promise<string> {
+  const client = new Anthropic({
+    apiKey: key,
+    timeout: 20_000,
+    maxRetries: 1,
+    ...(process.env["ANTHROPIC_BASE_URL"] ? { baseURL: process.env["ANTHROPIC_BASE_URL"] } : {}),
+  });
+  const res = await client.messages.create({
+    model: process.env["AI_MODEL"] || "claude-haiku-5-5",
+    max_tokens: 2000,
+    // Short shop-floor answers: low effort keeps replies fast and cheap.
+    output_config: { effort: "low", format: { type: "json_schema", schema: REPLY_SCHEMA } },
+    // The system prompt (rules + full catalog) is identical for every shopper for up to a
+    // minute, so cache it: repeat questions read it at ~10% of the normal input price.
+    system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+    messages: history.map((m) => ({ role: m.role, content: m.content })),
+  });
+  if (res.stop_reason === "refusal") throw new Error("ai_refusal");
+  return res.content
+    .map((c) => (c.type === "text" ? c.text : ""))
+    .join("")
+    .trim();
+}
+
+// Groq: OpenAI-compatible chat completions API. The default model supports strict JSON schema
+// output, so replies always come back in the shape the shop expects.
+async function callGroq(key: string, system: string, history: ChatTurn[]): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: process.env["GROQ_MODEL"] || "openai/gpt-oss-120b",
+        max_completion_tokens: 2000,
+        reasoning_effort: "low",
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: "shop_reply", strict: true, schema: REPLY_SCHEMA },
+        },
+        messages: [
+          { role: "system", content: system },
+          ...history.map((m) => ({ role: m.role, content: m.content })),
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => "")).slice(0, 200);
+      throw new Error(
+        res.status === 401
+          ? "invalid GROQ_API_KEY"
+          : res.status === 429
+            ? "groq rate limited (free-tier limit reached)"
+            : `groq ${res.status}: ${detail}`,
+      );
+    }
+    const body = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    return (body.choices?.[0]?.message?.content ?? "").trim();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function answer(history: ChatTurn[]): Promise<AssistantReply> {
   const snapshot = await loadSnapshot();
   const last = history[history.length - 1]?.content ?? "";
-  const key = process.env["ANTHROPIC_API_KEY"];
-  if (!key) return catalogAnswer(snapshot, last);
+  const provider = pickProvider();
+  if (!provider) return catalogAnswer(snapshot, last);
 
   try {
-    const client = new Anthropic({
-      apiKey: key,
-      timeout: 20_000,
-      maxRetries: 1,
-      ...(process.env["ANTHROPIC_BASE_URL"] ? { baseURL: process.env["ANTHROPIC_BASE_URL"] } : {}),
-    });
-    const res = await client.messages.create({
-      model: process.env["AI_MODEL"] || "claude-haiku-5-5",
-      max_tokens: 2000,
-      // Short shop-floor answers: low effort keeps replies fast and cheap.
-      output_config: { effort: "low", format: { type: "json_schema", schema: REPLY_SCHEMA } },
-      // The system prompt (rules + full catalog) is identical for every shopper for up to a
-      // minute, so cache it: repeat questions read it at ~10% of the normal input price.
-      system: [
-        { type: "text", text: systemPrompt(snapshot), cache_control: { type: "ephemeral" } },
-      ],
-      messages: history.map((m) => ({ role: m.role, content: m.content })),
-    });
-    if (res.stop_reason === "refusal") throw new Error("ai_refusal");
-    const text = res.content
-      .map((c) => (c.type === "text" ? c.text : ""))
-      .join("")
-      .trim();
+    const system = systemPrompt(snapshot);
+    const text =
+      provider.kind === "groq"
+        ? await callGroq(provider.key, system, history)
+        : await callClaude(provider.key, system, history);
     const json = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)) as {
       reply?: unknown;
       product_slugs?: unknown;
@@ -564,7 +629,7 @@ export async function answer(history: ChatTurn[]): Promise<AssistantReply> {
             : error instanceof Error
               ? error.message
               : String(error);
-    console.error("[assistant] falling back to catalog answer:", reason);
+    console.error(`[assistant] ${provider.kind} failed, using catalog answer:`, reason);
     return catalogAnswer(snapshot, last);
   }
 }
